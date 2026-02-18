@@ -1,0 +1,14 @@
+# Ignore everything by default
+/*
+
+
+!Unit00
+!Unit01
+!Unit02
+!Unit03
+!Unit04
+!Unit05
+!Unit06
+
+# Also track .gitignore itself
+!.gitignore
