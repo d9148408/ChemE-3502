@@ -1,1332 +1,481 @@
-# Unit06 Example 05 - 吸收塔多成分氣液平衡
+# Unit06_Example_05：化工案例五 — 多成分吸收塔穩態成分分析
 
-## 學習目標
+## 目標
 
-在本範例中，我們將探討化工製程中常見的氣液吸收分離操作。透過建立多成分氣體混合物通過吸收塔時的物料平衡與相平衡方程式，將氣液分離問題轉化為線性聯立方程組，並應用 NumPy 與 SciPy 的求解工具來計算各成分在氣液兩相中的濃度分布與吸收效率。
+本範例以一座具有 **N = 4 個理論平衡級** 的多成分吸收塔為對象，透過 Henry 定律（氣液相平衡）與各級穩態物料平衡，推導出三對角線性方程組，並利用 `scipy.linalg.solve()` 求解各級液相濃度分布。
 
-學習完本範例後，您將能夠：
+學習目標：
 
-- 建立吸收塔多成分氣液平衡系統的物料平衡方程式
-- 應用亨利定律 (Henry's Law) 建立相平衡關係
-- 將氣液吸收問題轉化為標準矩陣形式 $\mathbf{Ax} = \mathbf{b}$
-- 使用 `numpy.linalg.solve()` 求解線性方程組
-- 使用 `scipy.linalg.solve()` 進行求解並比較結果
-- 驗證解的唯一性與正確性（秩判定、物料守恆檢查）
-- 計算各成分的吸收效率與總分離性能
-- 探討操作參數對吸收性能的影響
-- 解釋解的物理意義與實際應用
+- 理解吸收塔操作原理及氣液相平衡關係（Henry 定律）
+- 推導各平衡級物料平衡方程式，建立三對角稀疏線性方程組
+- 組合多成分方程組為 block-diagonal 結構，分析矩陣性質（rank、det、條件數）
+- 使用 `scipy.linalg.solve()` 求解液相濃度分布
+- 驗證數值解與 Kremser 解析解的一致性
+- 說明吸收因子 $A_j = L/(Vm_j)$ 對吸收效率的物理意義
 
 ---
 
-## 1. 問題描述
+## §0 前言
 
-### 1.1 化工情境
+吸收（Absorption）是化工分離程序中的重要單元操作，廣泛應用於：
+尾氣脫硫、天然氣脫水、廢氣中有機溶劑回收等。
+其基本原理是利用**氣液兩相之間的溶解度差異**，使氣相中的特定成分（吸收質）轉移至液相溶劑中。
 
-某化工廠的製程廢氣中含有三種可溶性氣體成分（A、B、C）需要回收，採用水吸收塔進行分離純化。吸收塔操作在穩態條件下，使用純水作為吸收劑，從塔底向上流動，與從塔頂向下流動的廢氣逆流接觸。
-
-**系統配置**：
-- **操作模式**：逆流接觸吸收塔
-- **吸收劑**：純水（從塔頂進入）
-- **廢氣**：含 A、B、C 三種可溶性氣體（從塔底進入）
-- **操作條件**：等溫等壓（25°C，1 atm）
-- **假設**：吸收過程達到氣液平衡
-
-**進料氣體組成（塔底進口）**：
-
-| 成分 | 莫耳分率 $y_{\mathrm{in}}$ | 亨利常數 $H$ (atm) |
-|------|---------------------------|-------------------|
-| A    | 0.05                      | 100               |
-| B    | 0.03                      | 200               |
-| C    | 0.02                      | 500               |
-| 惰性氣體 | 0.90               | —                 |
-
-**操作參數**：
-- 進料氣體流率： $G = 100$ kmol/h（總莫耳流率）
-- 吸收液體流率： $L = 150$ kmol/h（純水）
-- 塔底進口氣體總壓： $P = 1$ atm
-- 塔頂進口液體：純水（各成分濃度為零）
-
-**亨利定律關係**：
-
-在稀溶液假設下，氣液平衡可用亨利定律表示：
+在穩態操作下，多級吸收塔（填充塔或板式塔）的每一個**理論平衡級**均假設氣液兩相達到**相平衡**，即氣相濃度與液相濃度之間滿足相平衡方程式。對稀溶液系統，常以 **Henry 定律**描述此關係：
 
 $$
-y_i = H_i \cdot x_i
+y_{i,j} = m_j \, x_{i,j}
 $$
 
-其中：
-- $y_i$ ：成分 $i$ 在氣相中的莫耳分率
-- $x_i$ ：成分 $i$ 在液相中的莫耳分率
-- $H_i$ ：成分 $i$ 的亨利常數（無因次形式， $H = H_{\mathrm{Pa}} / P$ ）
-
-**求解目標**：
-- 計算塔頂出口氣體中各成分的莫耳分率 $y_{\mathrm{A,out}}, y_{\mathrm{B,out}}, y_{\mathrm{C,out}}$
-- 計算塔底出口液體中各成分的莫耳分率 $x_{\mathrm{A,out}}, x_{\mathrm{B,out}}, x_{\mathrm{C,out}}$
-- 計算各成分的吸收效率 $\eta_i = \frac{y_{\mathrm{in}} - y_{\mathrm{out}}}{y_{\mathrm{in}}} \times 100\%$
-- 分析操作條件對吸收性能的影響
-
-### 1.2 吸收塔操作示意圖
-
-**系統流程**：
-![吸收塔示意圖](./outputs/figs/exam05_01.png)
-
-
-**符號說明**：
-- $G$ ：氣體莫耳流率（kmol/h）
-- $L$ ：液體莫耳流率（kmol/h）
-- $y_i$ ：氣相成分 $i$ 莫耳分率
-- $x_i$ ：液相成分 $i$ 莫耳分率
-- subscript "in"：塔底進口
-- subscript "out"：塔頂出口
+其中 $y_{i,j}$ 為第 $i$ 級氣相莫耳分率， $x_{i,j}$ 為第 $i$ 級液相莫耳分率， $m_j$ 為成分 $j$ 的 Henry 常數。
 
 ---
 
-## 2. 數學模型建立
+## §1 問題描述
 
-### 2.1 物料平衡原理
+### 1.1 系統架構
 
-對於穩態操作的吸收塔，每個成分的總莫耳數守恆。以逆流操作為例，成分 $i$ 的物料平衡方程式為：
+考慮一座具有 **N = 4 個理論平衡級** 的多成分吸收塔（如下示意圖）：
 
-**進入吸收塔的總莫耳數 = 離開吸收塔的總莫耳數**
+![吸收塔示意圖](./outputs/Unit06_Example_05/figs/absorption_tower.png)
 
-對於成分 $i$ ：
 
-$$
-G \cdot y_{i,\mathrm{in}} + L \cdot x_{i,\mathrm{in}} = G \cdot y_{i,\mathrm{out}} + L \cdot x_{i,\mathrm{out}}
-$$
+流體流向：
+- **液相**：由頂部向下流動（進入第 1 級，離開第 N 級）
+- **氣相**：由底部向上流動（進入第 N 級，離開第 1 級）
 
-整理後得到：
+### 1.2 操作條件
 
-$$
-G \cdot (y_{i,\mathrm{in}} - y_{i,\mathrm{out}}) = L \cdot (x_{i,\mathrm{out}} - x_{i,\mathrm{in}})
-$$
+| 參數 | 符號 | 數值 | 單位 |
+|------|------|------|------|
+| 理論平衡級數 | N | 4 | — |
+| 液相流率（水） | L | 120 | mol/s |
+| 氣相流率（混合氣）| V | 100 | mol/s |
+| 液相進料（純溶劑）| $x_{0,j}$ | 0 | mol frac |
 
-由於吸收劑為純水，因此 $x_{i,\mathrm{in}} = 0$ ，簡化為：
+### 1.3 三成分資料
 
-$$
-G \cdot y_{i,\mathrm{in}} - G \cdot y_{i,\mathrm{out}} = L \cdot x_{i,\mathrm{out}}
-$$
+| 成分 | 英文名稱 | 符號 | Henry 常數 $m_j$ | 進料氣相 $y_{j,\text{in}}$ | 吸收因子 $A_j$ |
+|------|----------|------|-----------------|---------------------------|----------------|
+| 丙酮 | Acetone  | A    | 0.6             | 0.10                       | 2.00 |
+| 乙醇 | Ethanol  | B    | 1.2             | 0.06                       | 1.00 |
+| 丙醇 | Propanol | C    | 2.4             | 0.04                       | 0.50 |
 
-$$
-G \cdot y_{i,\mathrm{in}} = G \cdot y_{i,\mathrm{out}} + L \cdot x_{i,\mathrm{out}}
-$$
-
-### 2.2 相平衡關係（亨利定律）
-
-在稀溶液假設下，氣液平衡關係可用亨利定律表示：
-
-$$
-y_{i,\mathrm{out}} = H_i \cdot x_{i,\mathrm{out}}
-$$
-
-其中 $H_i$ 為成分 $i$ 的亨利常數（無因次形式）。
-
-### 2.3 聯立方程組建立
-
-將相平衡關係代入物料平衡方程式，可得：
-
-$$
-G \cdot y_{i,\mathrm{in}} = G \cdot (H_i \cdot x_{i,\mathrm{out}}) + L \cdot x_{i,\mathrm{out}}
-$$
-
-$$
-G \cdot y_{i,\mathrm{in}} = (G \cdot H_i + L) \cdot x_{i,\mathrm{out}}
-$$
-
-求解液相出口濃度：
-
-$$
-x_{i,\mathrm{out}} = \frac{G \cdot y_{i,\mathrm{in}}}{G \cdot H_i + L}
-$$
-
-再由相平衡關係求解氣相出口濃度：
-
-$$
-y_{i,\mathrm{out}} = H_i \cdot x_{i,\mathrm{out}}
-$$
-
-### 2.4 線性方程組形式
-
-對於三個成分（A、B、C），我們有 6 個未知數： $x_{\mathrm{A}}, x_{\mathrm{B}}, x_{\mathrm{C}}, y_{\mathrm{A}}, y_{\mathrm{B}}, y_{\mathrm{C}}$ （均為出口濃度）。
-
-**物料平衡方程式**（3 個）：
-
-$$
-\begin{aligned}
-G \cdot y_{\mathrm{A,in}} &= G \cdot y_{\mathrm{A}} + L \cdot x_{\mathrm{A}} \\
-G \cdot y_{\mathrm{B,in}} &= G \cdot y_{\mathrm{B}} + L \cdot x_{\mathrm{B}} \\
-G \cdot y_{\mathrm{C,in}} &= G \cdot y_{\mathrm{C}} + L \cdot x_{\mathrm{C}}
-\end{aligned}
-$$
-
-**相平衡關係**（3 個）：
-
-$$
-\begin{aligned}
-y_{\mathrm{A}} &= H_{\mathrm{A}} \cdot x_{\mathrm{A}} \\
-y_{\mathrm{B}} &= H_{\mathrm{B}} \cdot x_{\mathrm{B}} \\
-y_{\mathrm{C}} &= H_{\mathrm{C}} \cdot x_{\mathrm{C}}
-\end{aligned}
-$$
-
-將相平衡關係代入物料平衡，整理為標準形式：
-
-$$
-\begin{aligned}
-G \cdot H_{\mathrm{A}} \cdot x_{\mathrm{A}} + L \cdot x_{\mathrm{A}} &= G \cdot y_{\mathrm{A,in}} \\
-G \cdot H_{\mathrm{B}} \cdot x_{\mathrm{B}} + L \cdot x_{\mathrm{B}} &= G \cdot y_{\mathrm{B,in}} \\
-G \cdot H_{\mathrm{C}} \cdot x_{\mathrm{C}} + L \cdot x_{\mathrm{C}} &= G \cdot y_{\mathrm{C,in}}
-\end{aligned}
-$$
-
-$$
-\begin{aligned}
-(G \cdot H_{\mathrm{A}} + L) \cdot x_{\mathrm{A}} &= G \cdot y_{\mathrm{A,in}} \\
-(G \cdot H_{\mathrm{B}} + L) \cdot x_{\mathrm{B}} &= G \cdot y_{\mathrm{B,in}} \\
-(G \cdot H_{\mathrm{C}} + L) \cdot x_{\mathrm{C}} &= G \cdot y_{\mathrm{C,in}}
-\end{aligned}
-$$
-
-### 2.5 矩陣形式表示
-
-**方法 1：求解液相濃度 $\mathbf{x}$ **
-
-係數矩陣 $\mathbf{A}$ （3×3 對角矩陣）：
-
-$$
-\mathbf{A} = \begin{bmatrix}
-G \cdot H_{\mathrm{A}} + L & 0 & 0 \\
-0 & G \cdot H_{\mathrm{B}} + L & 0 \\
-0 & 0 & G \cdot H_{\mathrm{C}} + L
-\end{bmatrix}
-$$
-
-未知數向量 $\mathbf{x}$ （3×1）：
-
-$$
-\mathbf{x} = \begin{bmatrix}
-x_{\mathrm{A}} \\ x_{\mathrm{B}} \\ x_{\mathrm{C}}
-\end{bmatrix}
-$$
-
-常數向量 $\mathbf{b}$ （3×1）：
-
-$$
-\mathbf{b} = \begin{bmatrix}
-G \cdot y_{\mathrm{A,in}} \\
-G \cdot y_{\mathrm{B,in}} \\
-G \cdot y_{\mathrm{C,in}}
-\end{bmatrix}
-$$
-
-**線性方程組**：
-
-$$
-\mathbf{Ax} = \mathbf{b}
-$$
-
-代入數值：
-- $G = 100$ kmol/h
-- $L = 150$ kmol/h
-- $y_{\mathrm{A,in}} = 0.05, y_{\mathrm{B,in}} = 0.03, y_{\mathrm{C,in}} = 0.02$
-- $H_{\mathrm{A}} = 100, H_{\mathrm{B}} = 200, H_{\mathrm{C}} = 500$
-
-$$
-\mathbf{A} = \begin{bmatrix}
-100 \times 100 + 150 & 0 & 0 \\
-0 & 100 \times 200 + 150 & 0 \\
-0 & 0 & 100 \times 500 + 150
-\end{bmatrix} = \begin{bmatrix}
-10150 & 0 & 0 \\
-0 & 20150 & 0 \\
-0 & 0 & 50150
-\end{bmatrix}
-$$
-
-$$
-\mathbf{b} = \begin{bmatrix}
-100 \times 0.05 \\
-100 \times 0.03 \\
-100 \times 0.02
-\end{bmatrix} = \begin{bmatrix}
-5.0 \\
-3.0 \\
-2.0
-\end{bmatrix}
-$$
-
-**解析解**（因為是對角矩陣，可直接求解）：
-
-$$
-\begin{aligned}
-x_{\mathrm{A}} &= \frac{5.0}{10150} = 4.926 \times 10^{-4} \\
-x_{\mathrm{B}} &= \frac{3.0}{20150} = 1.489 \times 10^{-4} \\
-x_{\mathrm{C}} &= \frac{2.0}{50150} = 3.988 \times 10^{-5}
-\end{aligned}
-$$
-
-求解氣相出口濃度（使用亨利定律）：
-
-$$
-\begin{aligned}
-y_{\mathrm{A,out}} &= H_{\mathrm{A}} \cdot x_{\mathrm{A}} = 100 \times 4.926 \times 10^{-4} = 0.04926 \\
-y_{\mathrm{B,out}} &= H_{\mathrm{B}} \cdot x_{\mathrm{B}} = 200 \times 1.489 \times 10^{-4} = 0.02978 \\
-y_{\mathrm{C,out}} &= H_{\mathrm{C}} \cdot x_{\mathrm{C}} = 500 \times 3.988 \times 10^{-5} = 0.01994
-\end{aligned}
-$$
-
-### 2.6 吸收效率計算
-
-各成分的吸收效率定義為：
-
-$$
-\eta_i = \frac{y_{i,\mathrm{in}} - y_{i,\mathrm{out}}}{y_{i,\mathrm{in}}} \times 100\%
-$$
-
-代入數值：
-
-$$
-\begin{aligned}
-\eta_{\mathrm{A}} &= \frac{0.05 - 0.04926}{0.05} \times 100\% = 1.48\% \\
-\eta_{\mathrm{B}} &= \frac{0.03 - 0.02978}{0.03} \times 100\% = 0.73\% \\
-\eta_{\mathrm{C}} &= \frac{0.02 - 0.01994}{0.02} \times 100\% = 0.30\%
-\end{aligned}
-$$
+**吸收因子** $A_j = \dfrac{L}{V m_j}$ 是衡量吸收性能的關鍵無因次數：
+- $A_j > 1$ ：液相有足夠溶解能力，吸收效率高（丙酮 $A = 2.0$ ）
+- $A_j = 1$ ：臨界吸收操作（乙醇 $A = 1.0$ ）
+- $A_j < 1$ ：液相溶解能力不足，成分傾向留於氣相（丙醇 $A = 0.5$ ）
 
 ---
 
-## 3. Python 實作求解
+## §2 理論背景
 
-### 3.1 導入相關套件
+### 2.1 穩態物料平衡
+
+對第 $i$ 級（ $i = 1, 2, \ldots, N$ ），成分 $j$ 的穩態物料平衡方程式（包絡第 $i$ 級）：
+
+$$
+L(x_{i,j} - x_{i-1,j}) = V(y_{i+1,j} - y_{i,j})
+$$
+
+物理意義：**液相帶入之淨增量 = 氣相被吸收之淨減量**。
+
+### 2.2 代入 Henry 定律
+
+將 $y_{i,j} = m_j x_{i,j}$ 代入物料平衡式：
+
+$$
+L(x_{i,j} - x_{i-1,j}) = V(m_j x_{i+1,j} - m_j x_{i,j})
+$$
+
+整理後得到關於液相濃度的線性遞推關係：
+
+$$
+\boxed{-L\,x_{i-1,j} + (L + Vm_j)\,x_{i,j} - Vm_j\,x_{i+1,j} = 0, \quad i = 1, 2, \ldots, N}
+$$
+
+### 2.3 邊界條件
+
+- **塔頂（ $i = 1$ ）**： $x_{0,j} = 0$ （純溶劑進料），使第 1 級方程右端為零
+- **塔底（ $i = N$ ）**： $y_{N+1,j} = y_{j,\text{in}}$ （已知進料氣相），使第 N 級方程右端為 $V y_{j,\text{in}}$
+
+### 2.4 Kremser 解析解
+
+對具有 N 個理論板且 Henry 定律成立的吸收塔，Kremser 方程式給出解析解：
+
+$$
+\eta_j = \frac{y_{j,\text{in}} - y_{1,j}}{y_{j,\text{in}}} =
+\begin{cases}
+\dfrac{A_j^{N+1} - A_j}{A_j^{N+1} - 1}, & A_j \neq 1 \\[6pt]
+\dfrac{N}{N+1}, & A_j = 1
+\end{cases}
+$$
+
+此解析解可作為驗證數值解正確性的理論基準。
+
+---
+
+## §3 建立線性方程組
+
+### 3.1 三對角係數矩陣（單一成分）
+
+對成分 $j$ ，N 個方程式寫成矩陣形式 $\mathbf{A}_j \mathbf{x}_j = \mathbf{b}_j$ ：
+
+$$
+\underbrace{\begin{bmatrix}
+L+Vm_j & -Vm_j &  0     &  0    \\
+-L     & L+Vm_j & -Vm_j &  0    \\
+ 0     & -L    & L+Vm_j & -Vm_j \\
+ 0     &  0    & -L    & L+Vm_j
+\end{bmatrix}}_{\mathbf{A}_j \in \mathbb{R}^{4\times 4}}
+\begin{bmatrix} x_{1,j} \\ x_{2,j} \\ x_{3,j} \\ x_{4,j} \end{bmatrix}
+=
+\begin{bmatrix} 0 \\ 0 \\ 0 \\ V y_{j,\text{in}} \end{bmatrix}
+$$
+
+各成分的係數矩陣展開如下（以 L = 120, V = 100 代入）：
+
+**成分 A（丙酮， $m = 0.6$ ， $Vm = 60$ ）：**
+
+$$
+\mathbf{A}_A = \begin{bmatrix}
+180 & -60  &   0  &   0 \\
+-120 & 180 & -60  &   0 \\
+ 0  & -120  & 180 & -60 \\
+ 0  &   0  & -120 & 180
+\end{bmatrix}, \quad
+\mathbf{b}_A = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 10 \end{bmatrix}
+$$
+
+**成分 B（乙醇， $m = 1.2$ ， $Vm = 120$ ）：**
+
+$$
+\mathbf{A}_B = \begin{bmatrix}
+240 & -120 &   0  &   0 \\
+-120 & 240 & -120 &   0 \\
+ 0  & -120 & 240  & -120 \\
+ 0  &   0  & -120 & 240
+\end{bmatrix}, \quad
+\mathbf{b}_B = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 6 \end{bmatrix}
+$$
+
+**成分 C（丙醇， $m = 2.4$ ， $Vm = 240$ ）：**
+
+$$
+\mathbf{A}_C = \begin{bmatrix}
+360 & -240 &   0  &   0 \\
+-120 & 360 & -240 &   0 \\
+ 0  & -120 & 360  & -240 \\
+ 0  &   0  & -120 & 360
+\end{bmatrix}, \quad
+\mathbf{b}_C = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 4 \end{bmatrix}
+$$
+
+### 3.2 合併為 block-diagonal 方程組（三成分）
+
+由於各成分之間在 Henry 定律下相互獨立，可將三個 $4 \times 4$ 的方程組合併為一個 $12 \times 12$ 的 block-diagonal 矩陣系統：
+
+$$
+\mathbf{A}_{\text{all}} = \begin{bmatrix}
+\mathbf{A}_A & \mathbf{0} & \mathbf{0} \\
+\mathbf{0} & \mathbf{A}_B & \mathbf{0} \\
+\mathbf{0} & \mathbf{0} & \mathbf{A}_C
+\end{bmatrix} \in \mathbb{R}^{12 \times 12}, \quad
+\mathbf{b}_{\text{all}} = \begin{bmatrix} \mathbf{b}_A \\ \mathbf{b}_B \\ \mathbf{b}_C \end{bmatrix}
+$$
+
+使用 `scipy.linalg.block_diag()` 函式可方便地組合 block-diagonal 矩陣。
+
+### 3.3 矩陣性質分析
+
+執行程式後得到各矩陣的性質：
+
+| 矩陣 | rank | det | 條件數 $\kappa$ |
+|------|------|-----|----------------|
+| $\mathbf{A}_A$ | 4 | $4.02 \times 10^{8}$ | 8.44 |
+| $\mathbf{A}_B$ | 4 | $1.04 \times 10^{9}$ | 9.47 |
+| $\mathbf{A}_C$ | 4 | $6.43 \times 10^{9}$ | 8.44 |
+| $\mathbf{A}_{\text{all}}$ | **12** | $2.68 \times 10^{27}$ | **16.89** |
+
+> **重要觀察**：所有成分的三對角矩陣均為**全秩（full rank）**、**非奇異**（ $\det \neq 0$ ），且條件數 $\kappa < 17$ ，屬於**良態（well-conditioned）**系統，可獲得機器精度的數值解。
+
+---
+
+## §4 程式演練
+
+### 4.1 環境設定與套件載入
+
+```python
+from pathlib import Path
+import os
+
+UNIT_OUTPUT_DIR = 'Unit06_Example_05'
+# ... (路徑設定，兼容 Colab 與 Local)
+```
 
 ```python
 import numpy as np
-from scipy import linalg
 import matplotlib.pyplot as plt
+import scipy.linalg
+import warnings
+warnings.filterwarnings('ignore')
 
-# 設定中文字型（避免圖表中文顯示問題）
-plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei']
-plt.rcParams['axes.unicode_minus'] = False
+plt.rcParams.update({
+    'figure.dpi': 100, 'axes.grid': True, 'grid.alpha': 0.3,
+    'font.size': 11, 'axes.titlesize': 13, 'axes.labelsize': 12,
+    'legend.fontsize': 10, 'lines.linewidth': 2, 'axes.unicode_minus': False,
+})
+print("✓ 套件載入完成")
+# numpy 版本: 1.23.5 | scipy 版本: 1.15.2 | matplotlib 版本: 3.10.8
 ```
 
-### 3.2 定義問題參數
+### 4.2 問題參數設定
 
 ```python
-# ========================================
-# 操作參數
-# ========================================
-G = 100.0  # 氣體流率 (kmol/h)
-L = 150.0  # 液體流率 (kmol/h)
-
-# ========================================
-# 進料氣體組成（塔底進口）
-# ========================================
-y_in = np.array([0.05, 0.03, 0.02])  # 成分 A, B, C 的莫耳分率
-
-# ========================================
-# 亨利常數 (無因次)
-# ========================================
-H = np.array([100.0, 200.0, 500.0])  # 成分 A, B, C 的亨利常數
-
-# 顯示問題參數
-print("=" * 60)
-print("吸收塔操作參數")
-print("=" * 60)
-print(f"氣體流率 G = {G} kmol/h")
-print(f"液體流率 L = {L} kmol/h")
-print(f"\n進料氣體組成（塔底進口）：")
-print(f"  y_A,in = {y_in[0]}")
-print(f"  y_B,in = {y_in[1]}")
-print(f"  y_C,in = {y_in[2]}")
-print(f"\n亨利常數：")
-print(f"  H_A = {H[0]}")
-print(f"  H_B = {H[1]}")
-print(f"  H_C = {H[2]}")
-print("=" * 60)
+N = 4           # 平衡級數
+L = 120.0       # 液相流率 (mol/s)
+V = 100.0       # 氣相流率 (mol/s)
+names = ['Acetone (A)', 'Ethanol (B)', 'Propanol (C)']
+C = len(names)
+m     = np.array([0.6, 1.2, 2.4])      # Henry 常數
+y_in  = np.array([0.10, 0.06, 0.04])   # 進料氣相莫耳分率
+x0    = np.zeros(C)                     # 純溶劑 x_0 = 0
+A_factor = L / (V * m)                  # 吸收因子
 ```
 
-**執行輸出**：
+執行輸出：
 ```
-============================================================
-吸收塔操作參數
-============================================================
-氣體流率 G = 100.0 kmol/h
-液體流率 L = 150.0 kmol/h
+=======================================================
+  多成分吸收塔參數摘要
+=======================================================
+  平衡級數 N = 4
+  液相流率 L = 120.0 mol/s
+  氣相流率 V = 100.0 mol/s
+  L/V = 1.20
 
-進料氣體組成（塔底進口）：
-  y_A,in = 0.05
-  y_B,in = 0.03
-  y_C,in = 0.02
+成分                          m_j     y_in   A_j = L/Vm
+-------------------------------------------------------
+  Acetone (A)              0.60   0.1000       2.0000
+  Ethanol (B)              1.20   0.0600       1.0000
+  Propanol (C)             2.40   0.0400       0.5000
+=======================================================
 
-亨利常數：
-  H_A = 100.0
-  H_B = 200.0
-  H_C = 500.0
-============================================================
+  吸收因子分析：
+  Acetone (A): A = 2.00  (A > 1 → 吸收效果佳)
+  Ethanol (B): A = 1.00  (A = 1 → 臨界吸收)
+  Propanol (C): A = 0.50  (A < 1 → 吸收效果差)
 ```
 
-### 3.3 建立線性方程組
+### 4.3 建立三對角係數矩陣
 
 ```python
-# ========================================
-# 建立係數矩陣 A（對角矩陣）
-# ========================================
-# A_ii = G * H_i + L
-A = np.diag(G * H + L)
+def build_component_matrix(N, L, V, mj):
+    """建立單一成分的 N×N 三對角係數矩陣"""
+    Vm = V * mj
+    A = np.zeros((N, N))
+    for i in range(N):
+        A[i, i] = L + Vm
+        if i > 0:   A[i, i-1] = -L
+        if i < N-1: A[i, i+1] = -Vm
+    return A
 
-# ========================================
-# 建立常數向量 b
-# ========================================
-# b_i = G * y_i,in
-b = G * y_in
+def build_rhs(N, L, V, mj, y_in_j, x0_j=0.0):
+    """建立右端向量"""
+    b = np.zeros(N)
+    b[0]   = L * x0_j
+    b[N-1] = V * y_in_j
+    return b
 
-# 顯示矩陣與向量
-print("\n" + "=" * 60)
-print("線性方程組 Ax = b")
-print("=" * 60)
-print("\n係數矩陣 A (3×3)：")
-print(A)
-print("\n常數向量 b (3×1)：")
-print(b)
+matrices = [build_component_matrix(N, L, V, m[j]) for j in range(C)]
+rhs_list = [build_rhs(N, L, V, m[j], y_in[j]) for j in range(C)]
+
+# 合併為 12×12 block-diagonal 矩陣
+A_all = scipy.linalg.block_diag(*matrices)
+b_all = np.concatenate(rhs_list)
 ```
 
-**執行輸出**：
+執行輸出（矩陣性質）：
 ```
-============================================================
-線性方程組 Ax = b
-============================================================
+合併方程組 A_all 維度: (12, 12)
+合併右端向量 b_all 維度: (12,)
 
-係數矩陣 A (3×3)：
-[[10150.     0.     0.]
- [    0. 20150.     0.]
- [    0.     0. 50150.]]
+  rank(A_all)       = 12  (應等於 12，表示唯一解)
+  det(A_all)        = 2.677616e+27  (≠ 0，非奇異矩陣 ✓)
+  cond(A_all)       = 16.8887
 
-常數向量 b (3×1)：
-[5. 3. 2.]
+  成分 Acetone (A): det(A_j) = 4.0176e+08,  κ(A_j) = 8.4444
+  成分 Ethanol (B): det(A_j) = 1.0368e+09,  κ(A_j) = 9.4721
+  成分 Propanol (C): det(A_j) = 6.4282e+09,  κ(A_j) = 8.4444
 ```
 
-**結果分析**：
-- 係數矩陣 $\mathbf{A}$ 為對角矩陣，表示三個成分的吸收過程彼此獨立
-- 對角元素分別為 $10150, 20150, 50150$ ，數值大表示該成分難被吸收
-- 常數向量 $\mathbf{b}$ 為各成分的進料莫耳流率（kmol/h）
-
-### 3.4 使用 NumPy 求解
+### 4.4 求解與結果輸出
 
 ```python
-# ========================================
-# 方法 1: NumPy linalg.solve()
-# ========================================
-print("\n" + "=" * 60)
-print("方法 1: NumPy linalg.solve()")
-print("=" * 60)
-
-# 求解液相出口濃度 x
-x_numpy = np.linalg.solve(A, b)
-
-print("\n液相出口濃度 x (莫耳分率)：")
-print(f"  x_A = {x_numpy[0]:.6e}")
-print(f"  x_B = {x_numpy[1]:.6e}")
-print(f"  x_C = {x_numpy[2]:.6e}")
-
-# 使用亨利定律計算氣相出口濃度
-y_out_numpy = H * x_numpy
-
-print("\n氣相出口濃度 y (莫耳分率)：")
-print(f"  y_A,out = {y_out_numpy[0]:.6f}")
-print(f"  y_B,out = {y_out_numpy[1]:.6f}")
-print(f"  y_C,out = {y_out_numpy[2]:.6f}")
-
-# 計算吸收效率
-eta_numpy = (y_in - y_out_numpy) / y_in * 100
-
-print("\n吸收效率 η (%)：")
-print(f"  η_A = {eta_numpy[0]:.2f}%")
-print(f"  η_B = {eta_numpy[1]:.2f}%")
-print(f"  η_C = {eta_numpy[2]:.2f}%")
+x_all = scipy.linalg.solve(A_all, b_all)
+x_sol = x_all.reshape(C, N)   # shape: (3, 4)
+y_sol = np.zeros((C, N))
+for j in range(C):
+    y_sol[j, :] = m[j] * x_sol[j, :]
 ```
 
-**執行輸出**：
-```
-============================================================
-方法 1: NumPy linalg.solve()
-============================================================
+**各級液相濃度分布 $x_{i,j}$ （mol frac）：**
 
-液相出口濃度 x (莫耳分率)：
-  x_A = 4.926108e-04
-  x_B = 1.489130e-04
-  x_C = 3.987525e-05
+| 級別 | Acetone (A) | Ethanol (B) | Propanol (C) |
+|------|-------------|-------------|--------------|
+| 第1級（頂部出口）| **0.005376** | 0.010000 | 0.008602 |
+| 第2級 | 0.016129 | 0.020000 | 0.012903 |
+| 第3級 | 0.037634 | 0.030000 | 0.015054 |
+| 第4級（底部出口）| 0.080645 | 0.040000 | **0.016129** |
 
-氣相出口濃度 y (莫耳分率)：
-  y_A,out = 0.049261
-  y_B,out = 0.029783
-  y_C,out = 0.019938
+**各級氣相濃度分布 $y_{i,j}$ （mol frac）：**
 
-吸收效率 η (%)：
-  η_A = 1.48%
-  η_B = 0.73%
-  η_C = 0.30%
-```
+| 級別 | Acetone (A) | Ethanol (B) | Propanol (C) |
+|------|-------------|-------------|--------------|
+| 第1級（塔頂出口）| **0.003226** | **0.012000** | **0.020645** |
+| 第2級 | 0.009677 | 0.024000 | 0.030968 |
+| 第3級 | 0.022581 | 0.036000 | 0.036129 |
+| 第4級 | 0.048387 | 0.048000 | 0.038710 |
+| 進料（塔底）| 0.100000 | 0.060000 | 0.040000 |
 
-**結果分析**：
-- **液相濃度**：成分 A 濃度最高（ $4.926 \times 10^{-4}$ ），因其亨利常數最小，溶解度最高
-- **氣相濃度**：出口氣體中仍保留約 98% 以上的原始成分（吸收率低）
-- **吸收效率**：成分 A 效率最高（1.48%），成分 C 最低（0.30%），與亨利常數成反比
-- **物理意義**：當前操作條件下吸收效率偏低，可能需要增加液氣比或改變溶劑
+**出口濃度、吸收率與 Kremser 解析解比較：**
 
-### 3.5 使用 SciPy 求解
+| 指標 | Acetone (A) | Ethanol (B) | Propanol (C) |
+|------|-------------|-------------|--------------|
+| $y_{\text{in}}$ （進料氣相）| 0.1000 | 0.0600 | 0.0400 |
+| $y_{\text{out}}$ （出口氣相）| 0.003226 | 0.012000 | 0.020645 |
+| $x_{\text{out}}$ （出口液相）| 0.080645 | 0.040000 | 0.016129 |
+| 吸收率 η（數值解）| **96.77%** | **80.00%** | **48.39%** |
+| 吸收率 η（Kremser）| 96.77% | 80.00% | 48.39% |
+| 差值 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
+
+### 4.5 解的驗證
 
 ```python
-# ========================================
-# 方法 2: SciPy linalg.solve()
-# ========================================
-print("\n" + "=" * 60)
-print("方法 2: SciPy linalg.solve()")
-print("=" * 60)
-
-# 求解液相出口濃度 x
-x_scipy = linalg.solve(A, b)
-
-print("\n液相出口濃度 x (莫耳分率)：")
-print(f"  x_A = {x_scipy[0]:.6e}")
-print(f"  x_B = {x_scipy[1]:.6e}")
-print(f"  x_C = {x_scipy[2]:.6e}")
-
-# 使用亨利定律計算氣相出口濃度
-y_out_scipy = H * x_scipy
-
-print("\n氣相出口濃度 y (莫耳分率)：")
-print(f"  y_A,out = {y_out_scipy[0]:.6f}")
-print(f"  y_B,out = {y_out_scipy[1]:.6f}")
-print(f"  y_C,out = {y_out_scipy[2]:.6f}")
-
-# 計算吸收效率
-eta_scipy = (y_in - y_out_scipy) / y_in * 100
-
-print("\n吸收效率 η (%)：")
-print(f"  η_A = {eta_scipy[0]:.2f}%")
-print(f"  η_B = {eta_scipy[1]:.2f}%")
-print(f"  η_C = {eta_scipy[2]:.2f}%")
+residual = A_all @ x_all - b_all
+res_norm = np.linalg.norm(residual)
+# ‖A_all·x - b‖₂ = 1.5384e-15  ✓ 機器精度
 ```
 
-**執行輸出**：
+執行輸出：
 ```
 ============================================================
-方法 2: SciPy linalg.solve()
+  解的驗證
 ============================================================
-
-液相出口濃度 x (莫耳分率)：
-  x_A = 4.926108e-04
-  x_B = 1.489130e-04
-  x_C = 3.987525e-05
-
-氣相出口濃度 y (莫耳分率)：
-  y_A,out = 0.049261
-  y_B,out = 0.029783
-  y_C,out = 0.019938
-
-吸收效率 η (%)：
-  η_A = 1.48%
-  η_B = 0.73%
-  η_C = 0.30%
-```
-
-**結果分析**：
-SciPy 求解結果與 NumPy 完全相同，驗證了両種方法的正確性和一致性。
-
-### 3.6 比較兩種方法的結果
-
-```python
-# ========================================
-# 比較 NumPy 與 SciPy 的結果
-# ========================================
-print("\n" + "=" * 60)
-print("NumPy 與 SciPy 結果比較")
-print("=" * 60)
-
-diff_x = np.abs(x_numpy - x_scipy)
-diff_y = np.abs(y_out_numpy - y_out_scipy)
-
-print("\n液相濃度差異：")
-print(f"  |x_A(numpy) - x_A(scipy)| = {diff_x[0]:.6e}")
-print(f"  |x_B(numpy) - x_B(scipy)| = {diff_x[1]:.6e}")
-print(f"  |x_C(numpy) - x_C(scipy)| = {diff_x[2]:.6e}")
-
-print("\n氣相濃度差異：")
-print(f"  |y_A(numpy) - y_A(scipy)| = {diff_y[0]:.6e}")
-print(f"  |y_B(numpy) - y_B(scipy)| = {diff_y[1]:.6e}")
-print(f"  |y_C(numpy) - y_C(scipy)| = {diff_y[2]:.6e}")
-
-print("\n✓ 兩種方法的結果完全一致（數值誤差 < 1e-10）")
-```
-
-**執行輸出**：
-```
-============================================================
-NumPy 與 SciPy 結果比較
-============================================================
-
-液相濃度差異：
-  |x_A(numpy) - x_A(scipy)| = 0.000000e+00
-  |x_B(numpy) - x_B(scipy)| = 0.000000e+00
-  |x_C(numpy) - x_C(scipy)| = 0.000000e+00
-
-氣相濃度差異：
-  |y_A(numpy) - y_A(scipy)| = 0.000000e+00
-  |y_B(numpy) - y_B(scipy)| = 0.000000e+00
-  |y_C(numpy) - y_C(scipy)| = 0.000000e+00
-
-✓ 兩種方法的結果完全一致（數值誤差 < 1e-10）
-```
-
-**結果分析**：
-- NumPy 與 SciPy 求解結果完全一致，差異為 0
-- 兩種方法都使用 LAPACK 程式庫，因此結果相同
-- 證明求解的數值穩定性與正確性
-
----
-
-## 4. 解的驗證與分析
-
-### 4.1 驗證解的唯一性
-
-```python
-# ========================================
-# 檢查矩陣的秩 (Rank)
-# ========================================
-print("\n" + "=" * 60)
-print("解的唯一性驗證")
-print("=" * 60)
-
-rank_A = np.linalg.matrix_rank(A)
-n = A.shape[0]
-
-print(f"\n係數矩陣 A 的秩: rank(A) = {rank_A}")
-print(f"未知數個數: n = {n}")
-
-if rank_A == n:
-    print(f"\n✓ rank(A) = n = {n}，方程組有唯一解")
-else:
-    print(f"\n✗ rank(A) ≠ n，方程組無唯一解")
-
-# 計算行列式
-det_A = np.linalg.det(A)
-print(f"\n係數矩陣行列式: det(A) = {det_A:.2e}")
-
-if abs(det_A) > 1e-10:
-    print("✓ det(A) ≠ 0，矩陣可逆，方程組有唯一解")
-else:
-    print("✗ det(A) ≈ 0，矩陣奇異，方程組無唯一解")
-```
-
-**執行輸出**：
-```
-============================================================
-解的唯一性驗證
-============================================================
-
-係數矩陣 A 的秩: rank(A) = 3
-未知數個數: n = 3
-
-✓ rank(A) = n = 3，方程組有唯一解
-
-係數矩陣行列式: det(A) = 1.03e+13
-✓ det(A) ≠ 0，矩陣可逆，方程組有唯一解
-```
-
-**結果分析**：
-- 矩陣秩 rank(A) = 3 = n，滿秩，方程組有唯一解
-- 行列式 det(A) = $1.03 \times 10^{13}$ ，非零，矩陣可逆
-- 對角矩陣的行列式等於對角元素的乘積： $10150 \times 20150 \times 50150$
-- 系統數值穩定，求解結果可靠
-
-### 4.2 驗證物料守恆
-
-```python
-# ========================================
-# 物料守恆驗證
-# ========================================
-print("\n" + "=" * 60)
-print("物料守恆驗證")
-print("=" * 60)
-
-# 計算各成分的物料平衡
-# 進入 = G * y_in + L * 0 (純水進入，x_in = 0)
-# 離開 = G * y_out + L * x_out
-
-material_in = G * y_in
-material_out = G * y_out_numpy + L * x_numpy
-
-print("\n各成分物料平衡 (kmol/h)：")
-print(f"\n成分 A:")
-print(f"  進入塔 = {material_in[0]:.4f} kmol/h")
-print(f"  離開塔 = {material_out[0]:.4f} kmol/h")
-print(f"  差異   = {abs(material_in[0] - material_out[0]):.6e} kmol/h")
-
-print(f"\n成分 B:")
-print(f"  進入塔 = {material_in[1]:.4f} kmol/h")
-print(f"  離開塔 = {material_out[1]:.4f} kmol/h")
-print(f"  差異   = {abs(material_in[1] - material_out[1]):.6e} kmol/h")
-
-print(f"\n成分 C:")
-print(f"  進入塔 = {material_in[2]:.4f} kmol/h")
-print(f"  離開塔 = {material_out[2]:.4f} kmol/h")
-print(f"  差異   = {abs(material_in[2] - material_out[2]):.6e} kmol/h")
-
-print("\n✓ 物料守恆成立（誤差 < 1e-10）")
-```
-
-**執行輸出**：
-```
-============================================================
-物料守恆驗證
-============================================================
-
-各成分物料平衡 (kmol/h)：
-
-成分 A:
-  進入塔 = 5.0000 kmol/h
-  離開塔 = 5.0000 kmol/h
-  差異   = 0.000000e+00 kmol/h
-
-成分 B:
-  進入塔 = 3.0000 kmol/h
-  離開塔 = 3.0000 kmol/h
-  差異   = 0.000000e+00 kmol/h
-
-成分 C:
-  進入塔 = 2.0000 kmol/h
-  離開塔 = 2.0000 kmol/h
-  差異   = 0.000000e+00 kmol/h
-
-✓ 物料守恆成立（誤差 < 1e-10）
-```
-
-**結果分析**：
-- 所有成分的進入與離開的莫耳流率完全相等
-- 物料平衡差異為零，証明求解滿足穩態態物料守恆
-- 這是物理系統的必要條件，驗證解的物理意義
-
-### 4.3 驗證相平衡關係
-
-```python
-# ========================================
-# 相平衡驗證（亨利定律）
-# ========================================
-print("\n" + "=" * 60)
-print("相平衡驗證（亨利定律）")
-print("=" * 60)
-
-# 計算 y = H * x
-y_calculated = H * x_numpy
-
-print("\n各成分相平衡驗證：")
-print(f"\n成分 A:")
-print(f"  y_A,out (求解) = {y_out_numpy[0]:.6f}")
-print(f"  H_A * x_A      = {y_calculated[0]:.6f}")
-print(f"  差異           = {abs(y_out_numpy[0] - y_calculated[0]):.6e}")
-
-print(f"\n成分 B:")
-print(f"  y_B,out (求解) = {y_out_numpy[1]:.6f}")
-print(f"  H_B * x_B      = {y_calculated[1]:.6f}")
-print(f"  差異           = {abs(y_out_numpy[1] - y_calculated[1]):.6e}")
-
-print(f"\n成分 C:")
-print(f"  y_C,out (求解) = {y_out_numpy[2]:.6f}")
-print(f"  H_C * x_C      = {y_calculated[2]:.6f}")
-print(f"  差異           = {abs(y_out_numpy[2] - y_calculated[2]):.6e}")
-
-print("\n✓ 相平衡關係滿足（亨利定律，誤差 < 1e-10）")
-```
-
-**執行輸出**：
-```
-============================================================
-相平衡驗證（亨利定律）
-============================================================
-
-各成分相平衡驗證：
-
-成分 A:
-  y_A,out (求解) = 0.049261
-  H_A * x_A      = 0.049261
-  差異           = 0.000000e+00
-
-成分 B:
-  y_B,out (求解) = 0.029783
-  H_B * x_B      = 0.029783
-  差異           = 0.000000e+00
-
-成分 C:
-  y_C,out (求解) = 0.019938
-  H_C * x_C      = 0.019938
-  差異           = 0.000000e+00
-
-✓ 相平衡關係滿足（亨利定律，誤差 < 1e-10）
-```
-
-**結果分析**：
-- 所有成分都滿足亨利定律： $y_i = H_i \cdot x_i$
-- 相平衡關係誤差為零，証明系統達到氣液平衡
-- 驗證了模型假設（平衡吸收）的正確性
-
-### 4.4 殘差分析
-
-```python
-# ========================================
-# 殘差分析
-# ========================================
-print("\n" + "=" * 60)
-print("殘差分析")
-print("=" * 60)
-
-# 計算殘差 r = Ax - b
-residual = A @ x_numpy - b
-
-print("\n殘差向量 r = Ax - b：")
-print(f"  r_1 = {residual[0]:.6e}")
-print(f"  r_2 = {residual[1]:.6e}")
-print(f"  r_3 = {residual[2]:.6e}")
-
-# 計算殘差範數
-residual_norm = np.linalg.norm(residual)
-print(f"\n殘差範數 ||r|| = {residual_norm:.6e}")
-
-if residual_norm < 1e-10:
-    print("✓ 殘差接近零，解滿足原方程組")
-else:
-    print("✗ 殘差較大，解可能存在誤差")
-```
-
-**執行輸出**：
-```
-============================================================
-殘差分析
-============================================================
-
-殘差向量 r = Ax - b：
-  r_1 = 0.000000e+00
-  r_2 = 0.000000e+00
-  r_3 = 0.000000e+00
-
-殘差範數 ||r|| = 0.000000e+00
-✓ 殘差接近零，解滿足原方程組
-```
-
-**結果分析**：
-- 殘差向量 $\mathbf{r} = \mathbf{Ax} - \mathbf{b}$ 的所有元素都為 0
-- 殘差範數 $||\mathbf{r}|| = 0$，証明解完美滿足原方程組
-- 對角矩陣的求解非常穩定，數值誤差極小
-
----
-
-## 5. 結果分析與視覺化
-
-### 5.1 吸收效率比較
-
-```python
-# ========================================
-# 繪製吸收效率比較圖
-# ========================================
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-components = ['A', 'B', 'C']
-x_pos = np.arange(len(components))
-
-bars = ax.bar(x_pos, eta_numpy, color=['#3498db', '#e74c3c', '#2ecc71'], 
-              alpha=0.8, edgecolor='black', linewidth=1.5)
-
-# 在柱狀圖上標註數值
-for i, (bar, eta) in enumerate(zip(bars, eta_numpy)):
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2., height + 0.05,
-            f'{eta:.2f}%', ha='center', va='bottom', fontsize=12, fontweight='bold')
-
-ax.set_xlabel('Component', fontsize=14, fontweight='bold')
-ax.set_ylabel('Absorption Efficiency (%)', fontsize=14, fontweight='bold')
-ax.set_title('Absorption Efficiency Comparison', fontsize=16, fontweight='bold')
-ax.set_xticks(x_pos)
-ax.set_xticklabels(components, fontsize=12)
-ax.grid(axis='y', alpha=0.3, linestyle='--')
-ax.set_ylim(0, max(eta_numpy) * 1.3)
-
-plt.tight_layout()
-plt.savefig('outputs/figs/Unit06_Example_05_Fig01_Absorption_Efficiency.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("\n✓ 吸收效率比較圖已儲存至 outputs/figs/Unit06_Example_05_Fig01_Absorption_Efficiency.png")
-```
-
-**執行輸出**：
-```
-✓ 吸收效率比較圖已儲存至 outputs/figs/Unit06_Example_05_Fig01_Absorption_Efficiency.png
-```
-
-**圖表分析**：
-
-![Absorption Efficiency Comparison](outputs/figs/Unit06_Example_05_Fig01_Absorption_Efficiency.png)
-
-*圖 5.1：三種成分的吸收效率比較*
-
-- **成分 A**：吸收效率 1.48%，最高
-- **成分 B**：吸收效率 0.73%，中等
-- **成分 C**：吸收效率 0.30%，最低
-- **趨勢**：吸收效率與亨利常數成反比（H 越小，溶解度越高，吸收效率越高）
-- **結論**：當前操作條件下整體吸收效率偏低，需要優化
-
-### 5.2 濃度分布比較
-
-```python
-# ========================================
-# 繪製進出口濃度比較圖
-# ========================================
-fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-
-# 左圖：氣相濃度
-x_pos = np.arange(len(components))
-width = 0.35
-
-bars1 = axes[0].bar(x_pos - width/2, y_in, width, label='Inlet (y_in)', 
-                     color='#e74c3c', alpha=0.8, edgecolor='black', linewidth=1.5)
-bars2 = axes[0].bar(x_pos + width/2, y_out_numpy, width, label='Outlet (y_out)', 
-                     color='#3498db', alpha=0.8, edgecolor='black', linewidth=1.5)
-
-axes[0].set_xlabel('Component', fontsize=14, fontweight='bold')
-axes[0].set_ylabel('Gas Phase Mole Fraction', fontsize=14, fontweight='bold')
-axes[0].set_title('Gas Phase Concentration', fontsize=16, fontweight='bold')
-axes[0].set_xticks(x_pos)
-axes[0].set_xticklabels(components, fontsize=12)
-axes[0].legend(fontsize=12)
-axes[0].grid(axis='y', alpha=0.3, linestyle='--')
-
-# 標註數值
-for bars in [bars1, bars2]:
-    for bar in bars:
-        height = bar.get_height()
-        axes[0].text(bar.get_x() + bar.get_width()/2., height + 0.001,
-                     f'{height:.4f}', ha='center', va='bottom', fontsize=10)
-
-# 右圖：液相濃度
-bars3 = axes[1].bar(x_pos, x_numpy, color='#2ecc71', alpha=0.8, 
-                     edgecolor='black', linewidth=1.5, label='Outlet (x_out)')
-
-axes[1].set_xlabel('Component', fontsize=14, fontweight='bold')
-axes[1].set_ylabel('Liquid Phase Mole Fraction', fontsize=14, fontweight='bold')
-axes[1].set_title('Liquid Phase Concentration', fontsize=16, fontweight='bold')
-axes[1].set_xticks(x_pos)
-axes[1].set_xticklabels(components, fontsize=12)
-axes[1].legend(fontsize=12)
-axes[1].grid(axis='y', alpha=0.3, linestyle='--')
-
-# 標註數值（使用科學記號）
-for bar, x_val in zip(bars3, x_numpy):
-    height = bar.get_height()
-    axes[1].text(bar.get_x() + bar.get_width()/2., height + height*0.05,
-                 f'{x_val:.2e}', ha='center', va='bottom', fontsize=10)
-
-plt.tight_layout()
-plt.savefig('outputs/figs/Unit06_Example_05_Fig02_Concentration_Comparison.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("✓ 濃度分布比較圖已儲存至 outputs/figs/Unit06_Example_05_Fig02_Concentration_Comparison.png")
-```
-
-**執行輸出**：
-```
-✓ 濃度分布比較圖已儲存至 outputs/figs/Unit06_Example_05_Fig02_Concentration_Comparison.png
-```
-
-**圖表分析**：
-
-![Concentration Comparison](outputs/figs/Unit06_Example_05_Fig02_Concentration_Comparison.png)
-
-*圖 5.2：氣相與液相濃度分布比較*
-
-**左圖：氣相濃度**
-- 進口氣體（紅色）與出口氣體（藍色）濃度非常接近
-- 證明吸收效率低，大部分氣體未被吸收
-- 三種成分的濃度排序：A > B > C
-
-**右圖：液相濃度**
-- 液相濃度極低（數量級 $10^{-4}$ ），符合稀溶液假設
-- 成分 A 濃度最高，因其溶解度最好
-- 濃度排序：A > B > C，與亨利常數成反比關係
-
-### 5.3 物料平衡驗證圖
-
-```python
-# ========================================
-# 繪製物料平衡驗證圖
-# ========================================
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-x_pos = np.arange(len(components))
-width = 0.35
-
-bars1 = ax.bar(x_pos - width/2, material_in, width, label='Material In (kmol/h)', 
-                color='#e74c3c', alpha=0.8, edgecolor='black', linewidth=1.5)
-bars2 = ax.bar(x_pos + width/2, material_out, width, label='Material Out (kmol/h)', 
-                color='#3498db', alpha=0.8, edgecolor='black', linewidth=1.5)
-
-ax.set_xlabel('Component', fontsize=14, fontweight='bold')
-ax.set_ylabel('Material Flow Rate (kmol/h)', fontsize=14, fontweight='bold')
-ax.set_title('Material Balance Verification', fontsize=16, fontweight='bold')
-ax.set_xticks(x_pos)
-ax.set_xticklabels(components, fontsize=12)
-ax.legend(fontsize=12)
-ax.grid(axis='y', alpha=0.3, linestyle='--')
-
-# 標註數值
-for bars in [bars1, bars2]:
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.05,
-                f'{height:.2f}', ha='center', va='bottom', fontsize=10)
-
-plt.tight_layout()
-plt.savefig('outputs/figs/Unit06_Example_05_Fig03_Material_Balance.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("✓ 物料平衡驗證圖已儲存至 outputs/figs/Unit06_Example_05_Fig03_Material_Balance.png")
-```
-
-**執行輸出**：
-```
-✓ 物料平衡驗證圖已儲存至 outputs/figs/Unit06_Example_05_Fig03_Material_Balance.png
-```
-
-**圖表分析**：
-
-![Material Balance Verification](outputs/figs/Unit06_Example_05_Fig03_Material_Balance.png)
-
-*圖 5.3：物料平衡驗證*
-
-- 紅色柱：進入吸收塔的物料流率
-- 藍色柱：離開吸收塔的物料流率
-- **完全重疊**：每個成分的進入與離開完全相等
-- **物理意義**：滿足穩態態物料守恆，驗證模型正確性
-- **流率排序**：A (5.0) > B (3.0) > C (2.0) kmol/h
-
----
-
-## 6. 操作參數影響分析
-
-### 6.1 液氣比 (L/G) 對吸收效率的影響
-
-```python
-# ========================================
-# 探討液氣比對吸收效率的影響
-# ========================================
-print("\n" + "=" * 60)
-print("操作參數影響分析：液氣比 (L/G)")
-print("=" * 60)
-
-# 固定 G = 100 kmol/h，改變 L
-L_values = np.linspace(50, 300, 50)  # 液體流率範圍
-LG_ratio = L_values / G
-
-# 儲存結果
-eta_A_vs_LG = []
-eta_B_vs_LG = []
-eta_C_vs_LG = []
-
-for L_test in L_values:
-    # 建立係數矩陣
-    A_test = np.diag(G * H + L_test)
-    b_test = G * y_in
-    
-    # 求解
-    x_test = np.linalg.solve(A_test, b_test)
-    y_out_test = H * x_test
-    
-    # 計算吸收效率
-    eta_test = (y_in - y_out_test) / y_in * 100
-    
-    eta_A_vs_LG.append(eta_test[0])
-    eta_B_vs_LG.append(eta_test[1])
-    eta_C_vs_LG.append(eta_test[2])
-
-# 轉換為 numpy 陣列
-eta_A_vs_LG = np.array(eta_A_vs_LG)
-eta_B_vs_LG = np.array(eta_B_vs_LG)
-eta_C_vs_LG = np.array(eta_C_vs_LG)
-
-# 繪圖
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-ax.plot(LG_ratio, eta_A_vs_LG, 'o-', label='Component A', 
-        color='#3498db', linewidth=2, markersize=4)
-ax.plot(LG_ratio, eta_B_vs_LG, 's-', label='Component B', 
-        color='#e74c3c', linewidth=2, markersize=4)
-ax.plot(LG_ratio, eta_C_vs_LG, '^-', label='Component C', 
-        color='#2ecc71', linewidth=2, markersize=4)
-
-# 標記當前操作點
-current_LG = L / G
-ax.axvline(current_LG, color='black', linestyle='--', linewidth=1.5, 
-           label=f'Current L/G = {current_LG:.2f}')
-
-ax.set_xlabel('Liquid-to-Gas Ratio (L/G)', fontsize=14, fontweight='bold')
-ax.set_ylabel('Absorption Efficiency (%)', fontsize=14, fontweight='bold')
-ax.set_title('Effect of L/G Ratio on Absorption Efficiency', fontsize=16, fontweight='bold')
-ax.legend(fontsize=12)
-ax.grid(True, alpha=0.3, linestyle='--')
-
-plt.tight_layout()
-plt.savefig('outputs/figs/Unit06_Example_05_Fig04_LG_Ratio_Effect.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("\n✓ 液氣比影響圖已儲存至 outputs/figs/Unit06_Example_05_Fig04_LG_Ratio_Effect.png")
-```
-
-**執行輸出**：
-```
-============================================================
-操作參數影響分析：液氣比 (L/G)
-============================================================
-
-✓ 液氣比影響圖已儲存至 outputs/figs/Unit06_Example_05_Fig04_LG_Ratio_Effect.png
-```
-
-**圖表分析**：
-
-![L/G Ratio Effect](outputs/figs/Unit06_Example_05_Fig04_LG_Ratio_Effect.png)
-
-*圖 6.1：液氣比 (L/G) 對吸收效率的影響*
-
-- **三條曲線**：分別代表成分 A（藍色圓圈）、B（紅色方塊）、C（綠色三角）
-- **增長趨勢**：所有成分的吸收效率隨 L/G 增加而提升
-- **當前操作點**：黑色虛線 (L/G = 1.5) 標示當前操作條件
-- **效率排序**：任意 L/G 下，η_A > η_B > η_C
-- **物理意義**：增加液體流率可提供更多吸收容量，但成本也增加
-- **設計建議**：若目標效率為 5%，需 L/G ≈ 2.5-3.0
-
-### 6.2 亨利常數對吸收效率的影響
-
-```python
-# ========================================
-# 探討亨利常數對吸收效率的影響
-# ========================================
-print("\n" + "=" * 60)
-print("操作參數影響分析：亨利常數")
-print("=" * 60)
-
-# 固定成分 A 的條件，改變其亨利常數
-H_A_values = np.linspace(10, 500, 50)  # 亨利常數範圍
-
-eta_A_vs_H = []
-
-for H_A_test in H_A_values:
-    # 建立係數矩陣（只改變成分 A）
-    H_test = np.array([H_A_test, H[1], H[2]])
-    A_test = np.diag(G * H_test + L)
-    b_test = G * y_in
-    
-    # 求解
-    x_test = np.linalg.solve(A_test, b_test)
-    y_out_test = H_test * x_test
-    
-    # 計算成分 A 的吸收效率
-    eta_A_test = (y_in[0] - y_out_test[0]) / y_in[0] * 100
-    eta_A_vs_H.append(eta_A_test)
-
-# 轉換為 numpy 陣列
-eta_A_vs_H = np.array(eta_A_vs_H)
-
-# 繪圖
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-ax.plot(H_A_values, eta_A_vs_H, 'o-', color='#3498db', linewidth=2, markersize=6)
-
-# 標記當前操作點
-ax.axvline(H[0], color='red', linestyle='--', linewidth=1.5, 
-           label=f'Current H_A = {H[0]}')
-
-ax.set_xlabel('Henry Constant H_A (dimensionless)', fontsize=14, fontweight='bold')
-ax.set_ylabel('Absorption Efficiency of A (%)', fontsize=14, fontweight='bold')
-ax.set_title('Effect of Henry Constant on Absorption Efficiency', fontsize=16, fontweight='bold')
-ax.legend(fontsize=12)
-ax.grid(True, alpha=0.3, linestyle='--')
-
-plt.tight_layout()
-plt.savefig('outputs/figs/Unit06_Example_05_Fig05_Henry_Constant_Effect.png', dpi=300, bbox_inches='tight')
-plt.show()
-
-print("\n✓ 亨利常數影響圖已儲存至 outputs/figs/Unit06_Example_05_Fig05_Henry_Constant_Effect.png")
-```
-
-**執行輸出**：
-```
-============================================================
-操作參數影響分析：亨利常數
-============================================================
-
-✓ 亨利常數影響圖已儲存至 outputs/figs/Unit06_Example_05_Fig05_Henry_Constant_Effect.png
-```
-
-**圖表分析**：
-
-![Henry Constant Effect](outputs/figs/Unit06_Example_05_Fig05_Henry_Constant_Effect.png)
-
-*圖 6.2：亨利常數對成分 A 吸收效率的影響*
-
-- **遞減趨勢**：吸收效率隨亨利常數 H_A 增加而下降
-- **當前操作點**：紅色虛線 (H_A = 100) 標示當前條件，η_A = 1.48%
-- **極限值**：當 H_A → 10 時，η_A → 13%；當 H_A → 500 時，η_A → 0.3%
-- **物理意義**：H 值越小表示成分在液相中溶解度越高，越容易被吸收
-- **設計建議**：選擇對目標成分溶解度高的溶劑 （低 H 值）可顯著提升效率
-
-### 6.3 操作參數分析總結
-
-```python
-# ========================================
-# 操作參數影響總結
-# ========================================
-print("\n" + "=" * 60)
-print("操作參數影響總結")
-print("=" * 60)
-
-print("\n1. 液氣比 (L/G) 的影響：")
-print("   - 增加液體流率 L 可提高吸收效率")
-print("   - L/G 增加時，提供更多液相接觸面積與吸收容量")
-print("   - 但過高的 L/G 會增加操作成本與能耗")
-print("   - 需在效率與成本間取得平衡")
-
-print("\n2. 亨利常數 H 的影響：")
-print("   - H 值越小的成分越容易被吸收（溶解度越高）")
-print("   - 成分 A (H=100) > 成分 B (H=200) > 成分 C (H=500)")
-print("   - 對應吸收效率：η_A > η_B > η_C")
-print("   - 選擇合適溶劑可降低目標成分的 H 值，提升效率")
-
-print("\n3. 設計建議：")
-print("   - 若需提高吸收效率，可考慮：")
-print("     (1) 增加液體流率 L")
-print("     (2) 選用對目標成分溶解度更高的溶劑")
-print("     (3) 降低操作溫度（降低 H 值）")
-print("     (4) 增加塔高以增加接觸時間")
-```
-
-**執行輸出**：
-```
-============================================================
-操作參數影響總結
-============================================================
-
-1. 液氣比 (L/G) 的影響：
-   - 增加液體流率 L 可提高吸收效率
-   - L/G 增加時，提供更多液相接觸面積與吸收容量
-   - 但過高的 L/G 會增加操作成本與能耗
-   - 需在效率與成本間取得平衡
-
-2. 亨利常數 H 的影響：
-   - H 值越小的成分越容易被吸收（溶解度越高）
-   - 成分 A (H=100) > 成分 B (H=200) > 成分 C (H=500)
-   - 對應吸收效率：η_A > η_B > η_C
-   - 選擇合適溶劑可降低目標成分的 H 值，提升效率
-
-3. 設計建議：
-   - 若需提高吸收效率，可考慮：
-     (1) 增加液體流率 L
-     (2) 選用對目標成分溶解度更高的溶劑
-     (3) 降低操作溫度（降低 H 值）
-     (4) 增加塔高以增加接觸時間
+  ‖A_all·x - b‖₂    = 1.5384e-15  ✓ 機器精度
+
+  各成分整體物料平衡驗證：
+  成分                          L·x_out   V·(y_in-y_out)           誤差
+  --------------------------------------------------------------
+  Acetone (A)                9.677419         9.677419     0.00e+00
+  Ethanol (B)                4.800000         4.800000     0.00e+00
+  Propanol (C)               1.935484         1.935484     0.00e+00
+
+  各級氣液相平衡驗證（y_{i,j} == m_j * x_{i,j}）：
+  最大平衡誤差 = 0.0000e+00  ✓ 完全滿足 Henry 定律
+
+  濃度物理合理性驗證：
+  最小液相濃度 x_min = 0.005376  ✓ ≥ 0
+  最大液相濃度 x_max = 0.080645  ✓ ≤ 1
+  各級氣相莫耳分率加總（三成分）: [0.03587097 0.06464516 0.09470968 0.13509677]
+  注意: 氣相中尚含惰性氣體，各成分 y 相加 < 1 為正常
+
+  ✓ 所有驗證通過，解答物理合理且數值精確
 ```
 
 ---
 
-## 7. 總結與應用
+## §5 結果討論
 
-### 7.1 關鍵學習要點
+### 5.1 液相濃度分布
 
-本範例透過吸收塔多成分氣液平衡問題，展示了以下重要觀念：
+![吸收塔濃度分布與吸收效率](./outputs/Unit06_Example_05/figs/absorption_tower_results.png)
 
-1. **數學建模能力**：
-   - 將化工單元操作轉化為線性方程組
-   - 整合物料平衡與相平衡關係
-   - 對角矩陣的特殊結構與求解優勢
+**圖說**：左圖為各成分液相濃度 $x_{i,j}$ 分布（由塔頂第1級到塔底第4級）；中圖為各成分氣相濃度 $y_{i,j}$ 分布及塔底進料氣體；右圖為三成分吸收效率比較（數值解 vs Kremser 解析解）。
 
-2. **數值求解技巧**：
-   - NumPy 與 SciPy 的線性方程組求解工具
-   - 解的唯一性判定（秩、行列式）
-   - 殘差分析與解的驗證
+**液相濃度分析**：
 
-3. **化工物理意義**：
-   - 亨利定律在氣液平衡中的應用
-   - 吸收效率與操作參數的關係
-   - 物料守恆與相平衡的物理限制
+- 三成分的液相濃度均沿塔高方向**由頂部 (Stage 1) 向底部 (Stage 4) 單調遞增**，符合物理直覺（溶劑在底部液相中已累積最多吸收質）
+- 丙酮（ $A = 2.0$ ）在塔底出口液相濃度最高（ $x_4 = 0.0806$ ），有效吸收了 96.77% 的進料成分
+- 乙醇（ $A = 1.0$ ）在塔頂 Stage 1、2 的液相濃度反而高於丙酮，因其進料氣相濃度相對較高（0.06）；但在 Stage 3 以下，丙酮（ $A = 2.0$ ）吸收速率更快，超越乙醇成為液相濃度最高的成分
+- 丙醇（ $A = 0.5$ ）塔底出口液相濃度最低（ $x_4 = 0.016$ ），吸收效果最差，大部分成分仍留在氣相
 
-4. **工程設計分析**：
-   - 液氣比 (L/G) 對吸收性能的影響
-   - 亨利常數與溶劑選擇的重要性
-   - 操作參數優化的工程考量
+**氣相濃度分析**：
 
-### 7.2 關鍵發現
+- 三成分的氣相濃度均沿塔高方向**由底部（進料）向頂部（出口）單調遞減**，符合吸收原理
+- 丙酮在塔頂出口的氣相濃度（0.003226）遠低於進料濃度（0.100），說明幾乎完全吸收
+- 丙醇在塔頂的氣相濃度（0.020645）仍接近進料濃度（0.040），吸收效果有限
 
-1. **數學求解成功**：
-   - 3×3 對角矩陣系統求解穩定，唯一解存在
-   - NumPy 與 SciPy 結果完全一致
-   - 殘差為零，滿足原方程組
+### 5.2 吸收效率與 Kremser 解析解比較
 
-2. **吸收效率分析**：
-   - 成分 A：1.48%（H = 100，溶解度最高）
-   - 成分 B：0.73%（H = 200，溶解度中等）
-   - 成分 C：0.30%（H = 500，溶解度最低）
-   - **結論**：亨利常數越大的成分越難被吸收
+三成分的數值解與 Kremser 解析解完全吻合（差值 = 0），這是**方程組建立正確、且 Henry 定律框架下理論板假設成立**時的預期結果。
 
-3. **操作參數影響**：
-   - 增加液氣比 (L/G) 可顯著提升吸收效率
-   - 降低亨利常數（選擇更好的溶劑）可改善吸收性能
-   - 當前操作條件下吸收效率較低，建議優化
+| 成分 | $A_j$ | 吸收率 η | 物理解釋 |
+|------|--------|---------|----------|
+| 丙酮（Acetone） | 2.00 | **96.77%** | $A \gg 1$ ，液相吸收能力遠超氣相傾向 |
+| 乙醇（Ethanol） | 1.00 | **80.00%** | $A = 1$ ，臨界操作，η = N/(N+1) = 4/5 |
+| 丙醇（Propanol）| 0.50 | **48.39%** | $A < 1$ ，氣相 Henry 常數大，較難被吸收 |
 
-4. **工程意義**：
-   - 對角矩陣結構表示各成分獨立吸收（無交互作用）
-   - 實際工程中可能需考慮成分間競爭吸收
-   - 設計時需平衡效率與成本
+**Kremser 公式驗證**（A = 1 特例）：
 
-### 7.3 實際應用
+$$
+\eta_B = \frac{N}{N+1} = \frac{4}{5} = 0.80 = 80\%
+$$
 
-吸收塔氣液平衡求解廣泛應用於：
+### 5.3 矩陣結構的工程意義
 
-- **環保工程**：廢氣處理、VOCs 回收、酸性氣體吸收
-- **石化工業**：天然氣脫硫、合成氣淨化、輕質烴回收
-- **食品工業**：CO₂ 吸收、香精回收、氨氣回收
-- **製藥工業**：溶劑回收、氣體純化、製程廢氣處理
-- **製程設計**：吸收塔尺寸計算、溶劑選擇、操作條件優化
+三對角線性系統是化工設備計算中最常見的線性方程組結構之一，其物理上源自「僅與相鄰級相互作用」的局部性假設，數學上具有帶狀（banded）稀疏結構。
 
-### 7.4 延伸學習
+| 特性 | 數值 | 意義 |
+|------|------|------|
+| 矩陣維度 | 12×12 | 3 成分 × 4 級 |
+| 非零元素比例 | 30/144 ≈ 21% | 稀疏矩陣 |
+| 條件數 κ | 16.89 | 良態系統，求解穩定 |
+| 殘差 ‖Ax-b‖₂ | 1.54×10⁻¹⁵ | 接近機器精度 |
 
-- **多段吸收塔**：考慮多個理論板的串聯系統
-- **非理想溶液**：使用活度係數修正相平衡關係
-- **溫度效應**：考慮溫度對亨利常數與吸收效率的影響
-- **動態模擬**：非穩態操作的動態響應分析
-- **經濟優化**：結合成本分析進行最佳化設計
-- **質量傳遞**：考慮傳質阻力與非平衡效應
+對更大規模系統（如 N = 100 級），應改用 **`scipy.linalg.solve_banded()`** 以充分利用帶狀矩陣的稀疏結構，顯著提升計算效率。
 
-### 7.5 進階主題
+---
 
-1. **塔板效率**：
-   - 實際塔板效率與理論板數計算
-   - Murphree 效率的應用
+## §6 結論
 
-2. **傳質係數**：
-   - 雙膜理論與傳質速率
-   - HTU-NTU 設計方法
+### 6.1 問題解答
 
-3. **競爭吸收**：
-   - 多成分系統的交互影響
-   - 選擇性吸收設計
+本範例成功求解了 4 級多成分吸收塔的穩態濃度分布：
 
-4. **共吸收塔設計**：
-   - 同時吸收多種目標成分
-   - 再生與循環系統整合
+| 成分 | 塔頂出口氣相 $y_{\text{out}}$ | 塔底出口液相 $x_{\text{out}}$ | 吸收率 η |
+|------|------------------------------|------------------------------|---------|
+| 丙酮（Acetone） | 0.003226 | 0.080645 | **96.77%** |
+| 乙醇（Ethanol） | 0.012000 | 0.040000 | **80.00%** |
+| 丙醇（Propanol）| 0.020645 | 0.016129 | **48.39%** |
+
+方程組求解指標：
+
+| 指標 | 數值 |
+|------|------|
+| rank(A_all) | 12（全秩，唯一解 ✓） |
+| det(A_all) | 2.68×10²⁷（非奇異 ✓） |
+| 條件數 κ(A_all) | 16.89（系統良態 ✓） |
+| 求解殘差 ‖Ax-b‖₂ | 1.54×10⁻¹⁵（機器精度 ✓） |
+| 物料平衡誤差 | 0.00e+00（完全守恆 ✓） |
+| Henry 定律誤差 | 0.00e+00（完全滿足 ✓） |
+| 數值解 vs Kremser 差值 | 0.00e+00（完全吻合 ✓） |
+
+### 6.2 方法論總結
+
+1. **系統的三對角結構**：由於每一級只與相鄰上下兩級相互作用，物料平衡自然形成三對角矩陣，這是利用 `scipy.linalg.solve()` 高效求解的基礎
+2. **Block-diagonal 組合技術**：對獨立成分系統，可用 `scipy.linalg.block_diag()` 組合大矩陣，直觀展示問題結構，並一次求解所有成分
+3. **吸收因子 $A_j$ 的判斷原則**：設計吸收塔時，應確保所有關鍵成分的 $A_j > 1$ ，以獲得充足的吸收效率；若 $A_j < 1$ ，需增加溶劑流率 $L$ 或降低操作溫度（以降低 $m_j$ ）
+4. **解的驗證的重要性**：整體物料平衡、相平衡條件、殘差範數、與解析解對照，四重驗證確保結果可靠
+5. **從四級擴展到多級**：程式結構採用迴圈建立矩陣，可輕鬆擴展到任意 N 級，無需手動修改方程組
 
 ---
 
 **課程資訊**
 - 課程名稱：電腦在化工上之應用
-- 課程單元：Unit06 線性聯立方程式之求解
+- 課程單元：Unit06 — 線性聯立方程式之求解（化工案例五）
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授
-- 更新日期：2026-02-18
+- 更新日期：2026-02-20
 
 **課程授權 [CC BY-NC-SA 4.0]**
  - 本教材遵循 [創用CC 姓名標示-非商業性-相同方式分享 4.0 國際 (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) 授權。
