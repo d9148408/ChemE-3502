@@ -11,6 +11,8 @@
 !Unit06
 !Unit07
 !Unit08
+!Unit09
+!Unit10
 
 # Also track .gitignore itself
 !.gitignore
