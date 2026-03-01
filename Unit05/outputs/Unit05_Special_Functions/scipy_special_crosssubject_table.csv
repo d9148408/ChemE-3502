@@ -1,0 +1,21 @@
+﻿,UO,TP,RE,TH,PC,CT,ST,NM
+gammainc/cc/inv,2,0,2,1,1,0,2,0
+betainc/inv,2,0,1,0,1,0,2,0
+psi/polygamma,1,0,1,0,1,1,2,0
+logsumexp,1,0,0,2,2,2,1,0
+erf/erfc/erfcx,1,2,1,0,0,1,1,1
+erfinv/erfcinv,1,2,0,0,0,0,0,0
+j0/j1/y0/y1,0,2,0,0,0,0,0,1
+i0/i1/k0/k1,0,2,2,0,0,0,0,0
+lambertw,0,0,2,0,0,0,0,0
+iv (Bessel I),0,0,2,0,0,0,0,0
+gammaln,1,0,2,1,2,0,1,1
+exprel/xlogy,0,0,1,1,0,2,0,0
+expm1/log1p,0,0,0,2,0,2,0,0
+ndtr/ndtri,0,0,0,1,0,2,2,0
+polylog,0,0,0,0,2,0,0,1
+zeta/zetac,0,0,0,1,2,0,0,1
+eval_legendre,0,0,0,0,0,0,0,2
+eval_chebyt,0,0,0,0,0,0,0,2
+airy,0,1,0,0,0,0,0,2
+hyp1f1/hyp2f1,0,0,0,0,2,0,0,2
