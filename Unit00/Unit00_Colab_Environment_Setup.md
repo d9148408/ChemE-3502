@@ -167,12 +167,12 @@ from google.colab import drive
 drive.mount('/content/drive')
 ```
 
-執行後會出現授權連結，點選連結並授權後，即可在 `/content/drive/My Drive/` 路徑下存取Google Drive的檔案。
+執行後會出現授權連結，點選連結並授權後，即可在 `/content/drive/MyDrive/` 路徑下存取Google Drive的檔案。
 
 ```python
 # 列出Google Drive根目錄的檔案
 import os
-os.listdir('/content/drive/My Drive/')
+os.listdir('/content/drive/MyDrive/')
 ```
 
 #### 方法三：從URL下載
