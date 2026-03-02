@@ -52,7 +52,7 @@
 
 ### Part 2：SciPy 科學計算套件
 
-- **[Unit05: SciPy 科學運算套件應用概述](Unit05/)** *(建構中)* — SciPy 架構總覽、各子模組功能介紹、化工領域應用分類導覽、特殊數學函數
+- **[Unit05: SciPy 科學運算套件應用概述](Unit05/)** — SciPy 架構總覽、各子模組功能介紹、化工領域應用分類導覽、特殊數學函數
 - **[Unit06: 線性聯立方程式之求解](Unit06/)** — scipy.linalg (solve, LU, lstsq, pinv)、scipy.sparse.linalg；物料平衡、能量平衡、反應器網絡 (6 個化工案例)
 - **[Unit07: 非線性方程式之求解](Unit07/)** — scipy.optimize (root_scalar, fsolve, root)；狀態方程式、泡點計算、CSTR 多重穩態 (6 個化工案例)
 - **[Unit08: 插值、微分與積分之運算](Unit08/)** — scipy.interpolate、numpy.gradient、scipy.integrate；物性估算、反應速率推斷、RTD 分析、傳遞單位數 (6 個化工案例)
@@ -64,7 +64,7 @@
 
 - **[Unit12: 程序最適化](Unit12/)** — scipy.optimize (minimize, linprog, milp, differential_evolution)；單/多變數、線性規劃、全域最適化；光阻製程、化學平衡、烷化程序、反應器最適溫度 (6 個化工案例)
 - **[Unit13: 參數估計](Unit13/)** — scipy.optimize (curve_fit, least_squares)、scipy.linalg.lstsq；線性/非線性最小平方法、置信區間；速率式擬合、吸附等溫線、ODE 嵌套估計 (7 個化工案例)
-- **[Unit14: 統計分析](Unit14/)** *(建構中)* — scipy.stats；機率分布、假設檢定、描述統計、製程統計分析
+- **[Unit14: 統計分析](Unit14/)** *(建構中)* — scipy.stats；描述統計、機率分布 (常態/t/F/卡方/Weibull)、常態性檢定、信賴區間、假設檢定 (t 檢定/ANOVA/卡方)、相關分析、線性回歸推論、製程能力分析 (6 個化工案例：製程品質描述統計、催化劑收率假設檢定、操作溫度 ANOVA、Arrhenius 回歸、設備可靠度分析、製程能力 SPC)
 - **[Unit15: 信號模擬與處理](Unit15/)** *(規劃中)* — scipy.signal；濾波器設計、系統模型、時域模擬、頻率響應分析
 
 ### Part 4：基礎 AI 模型入門
@@ -79,24 +79,24 @@
 
 | 週次 | 主題與單元 | 教學與學習活動 | 面授 (小時) |
 |---|---|---|---|
-| 1 | **Part 0 & Part 1**<br>Unit00 Python 學習環境設定<br>Unit01 電腦在化工上的應用概述 | 完成 Google Colab 環境設定<br>完成本機環境設定<br>完成課堂作業 | 3 |
-| 2 | **Part 1**<br>Unit02 Python 程式語言基礎 | 完成課堂作業 | 3 |
-| 3 | **Part 1**<br>Unit03 NumPy 與 Pandas 資料處理 | 完成課堂作業 | 3 |
-| 4 | **Part 1**<br>Unit04 Matplotlib 與 Seaborn 資料視覺化 | 完成課堂作業 | 3 |
-| 5 | **Part 2**<br>Unit05 SciPy 科學運算套件概述<br>Unit06 線性聯立方程式之求解 | 完成課堂作業 | 3 |
-| 6 | **Part 2**<br>Unit07 非線性方程式之求解 | 完成課堂作業 | 3 |
-| 7 | **Part 2**<br>Unit08 插值、微分與積分之運算 | 完成課堂作業 | 3 |
-| 8 | **Part 2**<br>Unit09 常微分方程式 (ODE) 之求解 | 完成課堂作業 | 3 |
-| 9 | **Part 2**<br>Unit10 偏微分方程式 (PDE) 之求解 | 完成課堂作業 | 3 |
-| 10 | **Part 2**<br>Unit11 傅立葉轉換與頻譜分析 | 完成課堂作業 | 3 |
-| 11 | **Part 3**<br>Unit12 程序最適化 | 完成課堂作業 | 3 |
-| 12 | **Part 3**<br>Unit13 參數估計 | 完成課堂作業 | 3 |
-| 13 | **Part 3**<br>Unit14 統計分析 | 完成課堂作業 | 3 |
-| 14 | **Part 3**<br>Unit15 信號模擬與處理 | 完成課堂作業 | 3 |
-| 15 | **Part 4**<br>Unit16 基礎 AI — 線性回歸模型 | 完成課堂作業 | 3 |
-| 16 | **Part 4**<br>Unit17 基礎 AI — 非線性回歸模型 | 完成課堂作業 | 3 |
-| 17 | **Part 4**<br>Unit18 基礎 AI — 神經網路模型 | 完成課堂作業 | 3 |
-| 18 | 期末回顧與綜合應用 | 期末評量 | 3 |
+| 1 | Unit00 Python 學習環境設定<br>Unit01 電腦在化工上的應用概述 | 完成 Google Colab 環境設定<br>完成本機環境設定<br>完成課堂作業 | 3 |
+| 2 | Unit02 Python 程式語言基礎 | 完成課堂作業 | 3 |
+| 3 | Unit03 NumPy 與 Pandas 資料處理 | 完成課堂作業 | 3 |
+| 4 | Unit04 Matplotlib 與 Seaborn 資料視覺化 | 完成課堂作業 | 3 |
+| 5 | Unit05 SciPy 科學運算套件概述 | 完成課堂作業 | 3 |
+| 6 | Unit06 線性聯立方程式之求解 | 完成課堂作業 | 3 |
+| 7 | Unit07 非線性方程式之求解 | 完成課堂作業 | 3 |
+| 8 | Unit08 插值、微分與積分之運算 | 完成課堂作業 | 3 |
+| 9 | Unit09 常微分方程式 (ODE) 之求解 | 完成課堂作業 | 3 |
+| 10 | Unit10 偏微分方程式 (PDE) 之求解 | 完成課堂作業 | 3 |
+| 11 | Unit11 傅立葉轉換與頻譜分析 | 完成課堂作業 | 3 |
+| 12 | Unit12 程序最適化 | 完成課堂作業 | 3 |
+| 13 | Unit13 參數估計 | 完成課堂作業 | 3 |
+| 14 | Unit14 統計分析 | 完成課堂作業 | 3 |
+| 15 | Unit15 信號模擬與處理 | 完成課堂作業 | 3 |
+| 16 | Unit16 基礎 AI — 線性回歸模型 | 完成課堂作業 | 3 |
+| 17 | Unit17 基礎 AI — 非線性回歸模型 | 完成課堂作業 | 3 |
+| 18 | Unit18 基礎 AI — 神經網路模型 | 完成課堂作業 | 3 |
 
 ---
 
@@ -133,93 +133,6 @@
 
 ---
 
-## 📂 資料夾結構
-
-```
-ChemE-3502/
-│
-├── Unit00/                    # Python 學習環境設定
-│   ├── PY310_environment.yml  # Conda 環境設定檔
-│   ├── Unit00_Colab_Environment_Setup.md
-│   ├── Unit00_Colab_Environment_Setup.ipynb
-│   ├── Unit00_Local_Environment_Setup.md
-│   └── Unit00_Local_Environment_Setup.ipynb
-│
-├── Unit01/                    # 電腦在化工上的應用概述
-│   └── Unit01_Overview.md
-│
-├── Unit02/                    # Python 程式語言基礎
-│   ├── Unit02_Python_Basics.md
-│   ├── Unit02_Python_Basics.ipynb
-│   └── Unit02_Python_Basics_Homework.ipynb
-│
-├── Unit03/                    # NumPy 與 Pandas
-│   ├── Unit03_Numpy.md / .ipynb / Homework.ipynb
-│   └── Unit03_Pandas.md / .ipynb / Homework.ipynb
-│
-├── Unit04/                    # Matplotlib 與 Seaborn
-│   ├── Unit04_Matplotlib.md / .ipynb / Homework.ipynb
-│   └── Unit04_Seaborn.md / .ipynb / Homework.ipynb
-│
-├── Unit05/                    # SciPy 科學運算套件概述 (建構中)
-│
-├── Unit06/                    # 線性聯立方程式 (6 個案例 + 作業)
-│   ├── Unit06_Linear_Equations.md / .ipynb
-│   ├── Unit06_Example_01~06.md / .ipynb
-│   └── Unit06_Homework.ipynb
-│
-├── Unit07/                    # 非線性方程式 (6 個案例 + 作業)
-│   ├── Unit07_Nonlinear_Equations.md / .ipynb
-│   ├── Unit07_Example_01~06.md / .ipynb
-│   └── Unit07_Homework.ipynb
-│
-├── Unit08/                    # 插值、微分與積分 (6 個案例 + 作業)
-│   ├── Unit08_Interpolation_Differentiation_Integration.md / .ipynb
-│   ├── Unit08_Example_01~06.md / .ipynb
-│   └── Unit08_Homework.ipynb
-│
-├── Unit09/                    # 常微分方程式 (6 個案例 + 作業)
-│   ├── Unit09_ODE.md / .ipynb
-│   ├── Unit09_Example_01~06.md / .ipynb
-│   └── Unit09_Homework.ipynb
-│
-├── Unit10/                    # 偏微分方程式 (6 個案例 + 3 特別案例 + 作業)
-│   ├── Unit10_PDE.md / .ipynb
-│   ├── Unit10_Example_01~06.md / .ipynb
-│   ├── Unit10_Example_Ficks_Laws_Equation.md / .ipynb
-│   ├── Unit10_Example_Fouriers_Laws_Equation.md / .ipynb
-│   ├── Unit10_Example_Navier_Stokes_Equation.md / .ipynb
-│   └── Unit10_Homework.ipynb
-│
-├── Unit11/                    # 傅立葉轉換與頻譜分析 (6 個案例 + 作業)
-│   ├── Unit11_Fourier_Transform.md / .ipynb
-│   ├── Unit11_Example_01~06.md / .ipynb
-│   └── Unit11_Homework.ipynb
-│
-├── Unit12/                    # 程序最適化 (6 個案例 + 作業)
-│   ├── Unit12_Optimization.md / .ipynb
-│   ├── Unit12_Example_01~06.md / .ipynb
-│   └── Unit12_Homework.ipynb
-│
-├── Unit13/                    # 參數估計 (7 個案例 + 作業)
-│   ├── Unit13_Parameter_Estimation.md / .ipynb
-│   ├── Unit13_Example_01~07.md / .ipynb
-│   └── Unit13_Homework.ipynb
-│
-├── Unit14/                    # 統計分析 (建構中)
-├── Unit15/                    # 信號模擬與處理 (規劃中)
-├── Unit16/                    # 基礎 AI — 線性回歸 (規劃中)
-├── Unit17/                    # 基礎 AI — 非線性回歸 (規劃中)
-├── Unit18/                    # 基礎 AI — 神經網路 (規劃中)
-│
-├── HW_ANS/                    # 作業解答
-├── pdf/                       # 課程參考 PDF
-├── README.md                  # 本文件
-└── current_works.md           # 課程開發任務追蹤
-```
-
----
-
 ## 🚀 快速開始
 
 ### 方法一：使用 Google Colab (推薦新手)
@@ -230,6 +143,28 @@ ChemE-3502/
 4. 開始學習！
 
 **優點**：免費、無需安裝、瀏覽器即可使用，適合快速上手
+
+### 課程資料下載
+```python
+# 連結個人Google Drive
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+
+# 複製課程資料
+%cd /content/drive/MyDrive
+!git clone https://github.com/d9148408/ChemE-3502.git
+```
+
+### 更新課程資料
+```python
+# 連結個人Google Drive
+from google.colab import drive
+drive.mount('/content/drive', force_remount=True)
+
+# 更新課程資料
+%cd /content/drive/MyDrive/ChemE-3502
+!git pull
+```
 
 ---
 
@@ -318,6 +253,7 @@ jupyter lab
 ## 📈 課程更新記錄
 
 - **2026-01** — Unit00–Unit13 完成初版
+- **2026-03** — Unit05 完成初版；Unit14 教學講義與 6 個化工案例 Notebook 建構中；Unit00–Unit13 各單元 README 完成
 
 ---
 
@@ -350,7 +286,7 @@ jupyter lab
 - 課程單元：Unit00–Unit18
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授
-- 更新日期：2026-03-01
+- 更新日期：2026-03-02
 
 **課程授權 [CC BY-NC-SA 4.0]**
 - 本教材遵循 [創用CC 姓名標示-非商業性-相同方式分享 4.0 國際 (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) 授權。
