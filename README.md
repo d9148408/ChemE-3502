@@ -64,7 +64,7 @@
 
 - **[Unit12: 程序最適化](Unit12/)** — scipy.optimize (minimize, linprog, milp, differential_evolution)；單/多變數、線性規劃、全域最適化；光阻製程、化學平衡、烷化程序、反應器最適溫度 (6 個化工案例)
 - **[Unit13: 參數估計](Unit13/)** — scipy.optimize (curve_fit, least_squares)、scipy.linalg.lstsq；線性/非線性最小平方法、置信區間；速率式擬合、吸附等溫線、ODE 嵌套估計 (7 個化工案例)
-- **[Unit14: 統計分析](Unit14/)** *(建構中)* — scipy.stats；描述統計、機率分布 (常態/t/F/卡方/Weibull)、常態性檢定、信賴區間、假設檢定 (t 檢定/ANOVA/卡方)、相關分析、線性回歸推論、製程能力分析 (6 個化工案例：製程品質描述統計、催化劑收率假設檢定、操作溫度 ANOVA、Arrhenius 回歸、設備可靠度分析、製程能力 SPC)
+- **[Unit14: 統計分析](Unit14/)** — scipy.stats；描述統計、機率分布 (常態/t/F/卡方/Weibull)、常態性檢定、信賴區間、假設檢定 (t 檢定/ANOVA/卡方)、相關分析、線性回歸推論、製程能力分析 (6 個化工案例：製程品質描述統計、催化劑收率假設檢定、操作溫度 ANOVA、Arrhenius 回歸、設備可靠度分析、製程能力 SPC)
 - **[Unit15: 信號模擬與處理](Unit15/)** *(規劃中)* — scipy.signal；濾波器設計、系統模型、時域模擬、頻率響應分析
 
 ### Part 4：基礎 AI 模型入門
@@ -253,7 +253,7 @@ jupyter lab
 ## 📈 課程更新記錄
 
 - **2026-01** — Unit00–Unit13 完成初版
-- **2026-03** — Unit05 完成初版；Unit14 教學講義與 6 個化工案例 Notebook 建構中；Unit00–Unit13 各單元 README 完成
+- **2026-03** — Unit14 統計分析完成初版（主 Notebook、6 個化工案例、作業）；Unit00–Unit14 各單元 README 完成
 
 ---
 
@@ -286,7 +286,7 @@ jupyter lab
 - 課程單元：Unit00–Unit18
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授
-- 更新日期：2026-03-02
+- 更新日期：2026-03-03
 
 **課程授權 [CC BY-NC-SA 4.0]**
 - 本教材遵循 [創用CC 姓名標示-非商業性-相同方式分享 4.0 國際 (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) 授權。
