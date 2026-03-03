@@ -162,8 +162,8 @@ from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
 # 更新課程資料
-%cd "/content/drive/MyDrive/Colab Notebooks/ChemE-3502"
-!git pull
+!git fetch origin
+!git reset --hard origin/master
 ```
 
 ---
