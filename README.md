@@ -151,7 +151,7 @@ from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
 # 複製課程資料
-%cd "/content/drive/MyDrive/Colab Notebooks"
+%cd "/content/drive/MyDrive/Colab Notebooks/"
 !git clone https://github.com/d9148408/ChemE-3502.git
 ```
 
@@ -162,9 +162,11 @@ from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
 
 # 更新課程資料
+%cd "/content/drive/MyDrive/Colab Notebooks/ChemE-3502/"
 !git fetch origin
 !git reset --hard origin/master
 ```
+更新課程資料程式運行完畢請稍等幾分鐘，確保你的雲端資料都已經更新完成。
 
 ---
 
