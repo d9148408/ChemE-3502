@@ -119,18 +119,10 @@ $$
 
 ### 3.1 三對角係數矩陣（單一成分）
 
-對成分 $j$ ，N 個方程式寫成矩陣形式 $\mathbf{A}_j \mathbf{x}_j = \mathbf{b}_j$ ：
+對成分 $j$ ，N 個方程式寫成矩陣形式 $\mathbf{A}_j \mathbf{x}_j = \mathbf{b}_j$ （其中 $\mathbf{A}_j \in \mathbb{R}^{4\times 4}$ ）：
 
 $$
-\underbrace{\begin{bmatrix}
-L+Vm_j & -Vm_j &  0     &  0    \\
--L     & L+Vm_j & -Vm_j &  0    \\
- 0     & -L    & L+Vm_j & -Vm_j \\
- 0     &  0    & -L    & L+Vm_j
-\end{bmatrix}}_{\mathbf{A}_j \in \mathbb{R}^{4\times 4}}
-\begin{bmatrix} x_{1,j} \\ x_{2,j} \\ x_{3,j} \\ x_{4,j} \end{bmatrix}
-=
-\begin{bmatrix} 0 \\ 0 \\ 0 \\ V y_{j,\text{in}} \end{bmatrix}
+\begin{bmatrix} L+Vm_j & -Vm_j & 0 & 0 \\ -L & L+Vm_j & -Vm_j & 0 \\ 0 & -L & L+Vm_j & -Vm_j \\ 0 & 0 & -L & L+Vm_j \end{bmatrix} \begin{bmatrix} x_{1,j} \\ x_{2,j} \\ x_{3,j} \\ x_{4,j} \end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\ 0 \\ V y_{j,\text{in}} \end{bmatrix}
 $$
 
 各成分的係數矩陣展開如下（以 L = 120, V = 100 代入）：
@@ -138,37 +130,19 @@ $$
 **成分 A（丙酮， $m = 0.6$ ， $Vm = 60$ ）：**
 
 $$
-\mathbf{A}_A = \begin{bmatrix}
-180 & -60  &   0  &   0 \\
--120 & 180 & -60  &   0 \\
- 0  & -120  & 180 & -60 \\
- 0  &   0  & -120 & 180
-\end{bmatrix}, \quad
-\mathbf{b}_A = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 10 \end{bmatrix}
+\mathbf{A}_A = \begin{bmatrix} 180 & -60 & 0 & 0 \\ -120 & 180 & -60 & 0 \\ 0 & -120 & 180 & -60 \\ 0 & 0 & -120 & 180 \end{bmatrix}, \quad \mathbf{b}_A = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 10 \end{bmatrix}
 $$
 
 **成分 B（乙醇， $m = 1.2$ ， $Vm = 120$ ）：**
 
 $$
-\mathbf{A}_B = \begin{bmatrix}
-240 & -120 &   0  &   0 \\
--120 & 240 & -120 &   0 \\
- 0  & -120 & 240  & -120 \\
- 0  &   0  & -120 & 240
-\end{bmatrix}, \quad
-\mathbf{b}_B = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 6 \end{bmatrix}
+\mathbf{A}_B = \begin{bmatrix} 240 & -120 & 0 & 0 \\ -120 & 240 & -120 & 0 \\ 0 & -120 & 240 & -120 \\ 0 & 0 & -120 & 240 \end{bmatrix}, \quad \mathbf{b}_B = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 6 \end{bmatrix}
 $$
 
 **成分 C（丙醇， $m = 2.4$ ， $Vm = 240$ ）：**
 
 $$
-\mathbf{A}_C = \begin{bmatrix}
-360 & -240 &   0  &   0 \\
--120 & 360 & -240 &   0 \\
- 0  & -120 & 360  & -240 \\
- 0  &   0  & -120 & 360
-\end{bmatrix}, \quad
-\mathbf{b}_C = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 4 \end{bmatrix}
+\mathbf{A}_C = \begin{bmatrix} 360 & -240 & 0 & 0 \\ -120 & 360 & -240 & 0 \\ 0 & -120 & 360 & -240 \\ 0 & 0 & -120 & 360 \end{bmatrix}, \quad \mathbf{b}_C = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 4 \end{bmatrix}
 $$
 
 ### 3.2 合併為 block-diagonal 方程組（三成分）
@@ -176,12 +150,7 @@ $$
 由於各成分之間在 Henry 定律下相互獨立，可將三個 $4 \times 4$ 的方程組合併為一個 $12 \times 12$ 的 block-diagonal 矩陣系統：
 
 $$
-\mathbf{A}_{\text{all}} = \begin{bmatrix}
-\mathbf{A}_A & \mathbf{0} & \mathbf{0} \\
-\mathbf{0} & \mathbf{A}_B & \mathbf{0} \\
-\mathbf{0} & \mathbf{0} & \mathbf{A}_C
-\end{bmatrix} \in \mathbb{R}^{12 \times 12}, \quad
-\mathbf{b}_{\text{all}} = \begin{bmatrix} \mathbf{b}_A \\ \mathbf{b}_B \\ \mathbf{b}_C \end{bmatrix}
+\mathbf{A}_{\text{all}} = \begin{bmatrix} \mathbf{A}_A & \mathbf{0} & \mathbf{0} \\ \mathbf{0} & \mathbf{A}_B & \mathbf{0} \\ \mathbf{0} & \mathbf{0} & \mathbf{A}_C \end{bmatrix} \in \mathbb{R}^{12 \times 12}, \quad \mathbf{b}_{\text{all}} = \begin{bmatrix} \mathbf{b}_A \\ \mathbf{b}_B \\ \mathbf{b}_C \end{bmatrix}
 $$
 
 使用 `scipy.linalg.block_diag()` 函式可方便地組合 block-diagonal 矩陣。
@@ -471,7 +440,7 @@ $$
 ---
 
 **課程資訊**
-- 課程名稱：電腦在化工上之應用
+- 課程名稱：電腦在化工上之應用 (ChemE 3502)
 - 課程單元：Unit06 — 線性聯立方程式之求解（化工案例五）
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授

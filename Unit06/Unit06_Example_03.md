@@ -91,15 +91,7 @@ $$
 寫成矩陣形式 $\mathbf{A}\mathbf{x} = \mathbf{b}$ ：
 
 $$
-\begin{bmatrix}
-1000 + V_1 k_1 & 0 & 0 & 0 \\
--1000 & 1100 + V_2 k_2 & -100 & 0 \\
-0 & -1100 & 1200 + V_3 k_3 & -100 \\
-0 & 0 & -1100 & 1100 + V_4 k_4
-\end{bmatrix}
-\begin{bmatrix} C_{A1} \\ C_{A2} \\ C_{A3} \\ C_{A4} \end{bmatrix}
-=
-\begin{bmatrix} 1000\,C_{A0} \\ 0 \\ 0 \\ 0 \end{bmatrix}
+\begin{bmatrix} 1000 + V_1 k_1 & 0 & 0 & 0 \\ -1000 & 1100 + V_2 k_2 & -100 & 0 \\ 0 & -1100 & 1200 + V_3 k_3 & -100 \\ 0 & 0 & -1100 & 1100 + V_4 k_4 \end{bmatrix} \begin{bmatrix} C_{A1} \\ C_{A2} \\ C_{A3} \\ C_{A4} \end{bmatrix} = \begin{bmatrix} 1000\,C_{A0} \\ 0 \\ 0 \\ 0 \end{bmatrix}
 $$
 
 **未知數**： $\mathbf{x} = [C_{A1}, C_{A2}, C_{A3}, C_{A4}]^T \ (\text{mol/L})$
@@ -433,7 +425,7 @@ print(f"\n✓ 圖檔已儲存：{fig_path}")
 ---
 
 **課程資訊**
-- 課程名稱：電腦在化工上之應用
+- 課程名稱：電腦在化工上之應用 (ChemE 3502)
 - 課程單元：Unit06 線性聯立方程式之求解 — Example 03
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授

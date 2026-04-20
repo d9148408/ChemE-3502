@@ -70,13 +70,7 @@ $$
 
 
 $$
-\underbrace{\begin{bmatrix}
-55.9 & 20.1 & 17.6 & 18.3 & 19.5 \\
- 7.9 & 52.2 & 12.2 & 13.8 & 18.2 \\
-16.3 & 11.2 & 46.0 & 11.7 & 21.5 \\
-11.5 &  9.8 & 14.3 & 47.1 & 10.6 \\
- 8.4 &  6.7 &  9.9 &  9.1 & 30.2
-\end{bmatrix}}_{\mathbf{A}} \underbrace{\begin{bmatrix}V_1\\V_2\\V_3\\V_4\\V_5\end{bmatrix}}_{\mathbf{x}} = \underbrace{\begin{bmatrix}1000\\720\\920\\720\\640\end{bmatrix}}_{\mathbf{b}}
+\begin{bmatrix} 55.9 & 20.1 & 17.6 & 18.3 & 19.5 \\ 7.9 & 52.2 & 12.2 & 13.8 & 18.2 \\ 16.3 & 11.2 & 46.0 & 11.7 & 21.5 \\ 11.5 & 9.8 & 14.3 & 47.1 & 10.6 \\ 8.4 & 6.7 & 9.9 & 9.1 & 30.2 \end{bmatrix} \begin{bmatrix} V_1 \\ V_2 \\ V_3 \\ V_4 \\ V_5 \end{bmatrix} = \begin{bmatrix} 1000 \\ 720 \\ 920 \\ 720 \\ 640 \end{bmatrix}
 $$
 
 
@@ -300,7 +294,7 @@ print("=" * 55)
 
 ## 4. 結果視覺化
 
-![Liquid Blending Problem Solution Summary](outputs/Unit06_Example_01/figs/blending_solution.png)
+![Liquid Blending Problem Solution Summary](./outputs/Unit06_Example_01/figs/blending_solution.png)
 
 > **說明**：左圖為各槽所需用量長條圖；中圖為各槽用量佔總體積之比例（槽 5 最大，佔 33.6%）；右圖比較計算組成與目標組成，兩者完全吻合（誤差在機器精度等級）。
 
@@ -343,7 +337,7 @@ print("=" * 55)
 ---
 
 **課程資訊**
-- 課程名稱：電腦在化工上之應用
+- 課程名稱：電腦在化工上之應用 (ChemE 3502)
 - 課程單元：Unit06 範例演練 01 — 液體摻合問題
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授

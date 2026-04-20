@@ -71,17 +71,7 @@ $$
 其中 $a_{j,k}$ 為出口股 $k$ 中成分 $j$ 之莫耳分率， $z_j$ 為進料中成分 $j$ 之莫耳分率。寫成矩陣形式 $\mathbf{Ax}=\mathbf{b}$ ：
 
 $$
-\underbrace{\begin{bmatrix}
-0.07 & 0.18 & 0.15 & 0.24 \\
-0.04 & 0.24 & 0.10 & 0.65 \\
-0.54 & 0.42 & 0.54 & 0.10 \\
-0.35 & 0.16 & 0.21 & 0.01
-\end{bmatrix}}_{\mathbf{A}}
-\underbrace{\begin{bmatrix}D_2\\B_2\\D_3\\B_3\end{bmatrix}}_{\mathbf{x}}
-=
-\underbrace{\begin{bmatrix}0.15\\0.25\\0.40\\0.20\end{bmatrix}}_{\mathbf{z}} \times 70
-=
-\underbrace{\begin{bmatrix}10.5\\17.5\\28.0\\14.0\end{bmatrix}}_{\mathbf{b}}
+\begin{bmatrix} 0.07 & 0.18 & 0.15 & 0.24 \\ 0.04 & 0.24 & 0.10 & 0.65 \\ 0.54 & 0.42 & 0.54 & 0.10 \\ 0.35 & 0.16 & 0.21 & 0.01 \end{bmatrix} \begin{bmatrix} D_2 \\ B_2 \\ D_3 \\ B_3 \end{bmatrix} = \begin{bmatrix} 0.15 \\ 0.25 \\ 0.40 \\ 0.20 \end{bmatrix} \times 70 = \begin{bmatrix} 10.5 \\ 17.5 \\ 28.0 \\ 14.0 \end{bmatrix}
 $$
 
 - $\mathbf{A}$ ：係數矩陣，各欄代表一個出口股，各列代表一種成分（4×4）
@@ -387,7 +377,7 @@ x_B1 = (A_col3 @ np.array([D3, B3])) / B1
 ---
 
 **課程資訊**
-- 課程名稱：電腦在化工上之應用
+- 課程名稱：電腦在化工上之應用 (ChemE 3502)
 - 課程單元：Unit06 範例演練 02 — 蒸餾塔組之成分分析
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授
