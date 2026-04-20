@@ -97,18 +97,18 @@ $$
 線性聯立方程式 $\mathbf{Ax} = \mathbf{b}$ 有解之充要條件為：
 
 $$
-\operatorname{rank}(\mathbf{A}) = \operatorname{rank}([\mathbf{A} \mid \mathbf{b}])
+\mathrm{rank}(\mathbf{A}) = \mathrm{rank}([\mathbf{A} \mid \mathbf{b}])
 $$
 
 其中 $[\mathbf{A} \mid \mathbf{b}]$ 為**擴充矩陣 (augmented matrix)**，即將 $\mathbf{b}$ 附加到 $\mathbf{A}$ 右側所形成的 $m \times (n+1)$ 矩陣。
 
-令 $r = \operatorname{rank}(\mathbf{A})$ ，解的情況分三種：
+令 $r = \mathrm{rank}(\mathbf{A})$ ，解的情況分三種：
 
 | 情況 | 條件 | 解的類型 |
 |------|------|---------|
-| 唯一解 | $\operatorname{rank}(\mathbf{A}) = \operatorname{rank}([\mathbf{A}\mid\mathbf{b}]) = n$ | 恰有一組解，且 $\det(\mathbf{A}) \neq 0$ |
-| 無窮多解 | $\operatorname{rank}(\mathbf{A}) = \operatorname{rank}([\mathbf{A}\mid\mathbf{b}]) < n$ | 存在 $n - r$ 個自由變數，有無窮多組解 |
-| 無解 | $\operatorname{rank}(\mathbf{A}) < \operatorname{rank}([\mathbf{A}\mid\mathbf{b}])$ | 方程式互相矛盾，不含共同解 |
+| 唯一解 | $\mathrm{rank}(\mathbf{A}) = \mathrm{rank}([\mathbf{A}\mid\mathbf{b}]) = n$ | 恰有一組解，且 $\det(\mathbf{A}) \neq 0$ |
+| 無窮多解 | $\mathrm{rank}(\mathbf{A}) = \mathrm{rank}([\mathbf{A}\mid\mathbf{b}]) < n$ | 存在 $n - r$ 個自由變數，有無窮多組解 |
+| 無解 | $\mathrm{rank}(\mathbf{A}) < \mathrm{rank}([\mathbf{A}\mid\mathbf{b}])$ | 方程式互相矛盾，不含共同解 |
 
 **Python 計算秩（判定工具）：**
 
@@ -162,7 +162,7 @@ n (未知數數目) = 3
 **條件：**
 
 $$
-\operatorname{rank}(\mathbf{A}) = n \quad \Leftrightarrow \quad \det(\mathbf{A}) \neq 0
+\mathrm{rank}(\mathbf{A}) = n \quad \Leftrightarrow \quad \det(\mathbf{A}) \neq 0
 $$
 
 #### 情況二：無窮多解 (Underdetermined System，低確定系統)
@@ -177,7 +177,7 @@ $$
 
 #### 情況三：無解 (Overdetermined System，過確定系統)
 
-方程式數目大於未知數數目且方程式之間互相矛盾 ( $\operatorname{rank}(\mathbf{A}) < \operatorname{rank}([\mathbf{A}\mid\mathbf{b}])$ )。
+方程式數目大於未知數數目且方程式之間互相矛盾 ( $\mathrm{rank}(\mathbf{A}) < \mathrm{rank}([\mathbf{A}\mid\mathbf{b}])$ )。
 
 **處理方式**：尋求**最小平方解**，使殘差的 $\ell_2$ 範數最小：
 
@@ -203,7 +203,7 @@ $$
 \mathbf{Ax} = \mathbf{0}
 $$
 
-齊次方程組永遠有**顯解 (trivial solution)** $\mathbf{x} = \mathbf{0}$ 。若 $\operatorname{rank}(\mathbf{A}) < n$ ，則另存在非零解（無窮多組）。
+齊次方程組永遠有**顯解 (trivial solution)** $\mathbf{x} = \mathbf{0}$ 。若 $\mathrm{rank}(\mathbf{A}) < n$ ，則另存在非零解（無窮多組）。
 
 **完整解的結構**：若 $\mathbf{x}^*$ 為非齊次方程的一個特解，則所有解可表示為：
 
@@ -700,7 +700,7 @@ x, info = sp_linalg.gmres(A_sparse, b, rtol=1e-10, restart=50, maxiter=200)
 
 **求解流程：**
 
-1. 確認 $\operatorname{rank}(\mathbf{A}) = n$
+1. 確認 $\mathrm{rank}(\mathbf{A}) = n$
 2. 呼叫 `linalg.solve(A, b)` 求解
 3. 計算殘差 `np.linalg.norm(A @ x - b)` 驗證精度
 
@@ -1416,7 +1416,7 @@ print(f"解: {np.round(x_safe, 4)}")
 
 | 項目 | 重點 |
 |------|------|
-| 方程式類型判斷 | 使用 `np.linalg.matrix_rank()` 計算 $\operatorname{rank}(\mathbf{A})$ 與 $\operatorname{rank}([\mathbf{A}\mid\mathbf{b}])$ 進行判斷 |
+| 方程式類型判斷 | 使用 `np.linalg.matrix_rank()` 計算 $\mathrm{rank}(\mathbf{A})$ 與 $\mathrm{rank}([\mathbf{A}\mid\mathbf{b}])$ 進行判斷 |
 | 唯一解求解 | `scipy.linalg.solve()` — 最快速的密集矩陣直接法 |
 | 多右端向量 | `scipy.linalg.lu_factor()` + `lu_solve()` — 僅需分解一次 |
 | 最小平方解 | `scipy.linalg.lstsq()` — 適用過確定或一般情況 |

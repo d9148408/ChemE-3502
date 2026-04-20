@@ -130,7 +130,7 @@ print(f"\n矩陣形狀: A = {A.shape}, b = {b.shape}")
 使用 **Rouché–Capelli 定理** 判定解的存在性與唯一性：
 
 $$
-\operatorname{rank}(\mathbf{A}) = \operatorname{rank}([\mathbf{A} \mid \mathbf{b}]) = n \quad \Rightarrow \quad \text{唯一解}
+\mathrm{rank}(\mathbf{A}) = \mathrm{rank}([\mathbf{A} \mid \mathbf{b}]) = n \quad \Rightarrow \quad \text{唯一解}
 $$
 
 ```python

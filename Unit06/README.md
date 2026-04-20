@@ -167,7 +167,7 @@ $$
 **數學模型**：每成分 4×4 三對角矩陣，合併為 12×12 block-diagonal 系統
 
 $$
-\underbrace{\begin{bmatrix}\mathbf{A}_A & & \\ & \mathbf{A}_B & \\ & & \mathbf{A}_C\end{bmatrix}}_{\mathbf{A}_{all} \in \mathbb{R}^{12\times12}} \mathbf{x} = \mathbf{b}
+\begin{bmatrix} \mathbf{A}_A & & \\ & \mathbf{A}_B & \\ & & \mathbf{A}_C \end{bmatrix} \mathbf{x} = \mathbf{b}, \quad \mathbf{A}_{all} \in \mathbb{R}^{12\times12}
 $$
 
 **化工重點**：
