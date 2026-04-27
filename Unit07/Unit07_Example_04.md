@@ -247,12 +247,7 @@ $$
 
 **穩定性判準（Lyapunov 線性穩定性）：**
 
-$$
-\begin{cases}
-\text{Re}(\lambda_i) < 0 \;\forall i & \Rightarrow \textbf{穩定（Stable）} \\
-\exists\; \text{Re}(\lambda_i) > 0 & \Rightarrow \textbf{不穩定（Unstable）}
-\end{cases}
-$$
+$$\begin{cases} \text{Re}(\lambda_i) < 0 \;\forall i & \Rightarrow \textbf{穩定（Stable）} \\ \exists\; \text{Re}(\lambda_i) > 0 & \Rightarrow \textbf{不穩定（Unstable）} \end{cases}$$
 
 ### 7.2 計算結果
 
@@ -378,11 +373,11 @@ Stability Analysis via Jacobian Eigenvalues
 ---
 
 **課程資訊**
-- 課程名稱：化工數值方法與程式設計
+- 課程名稱：電腦在化工上之應用 (ChemE 3502)
 - 課程單元：Unit 07 - 非線性方程式求解
 - 課程製作：逢甲大學 化工系 智慧程序系統工程實驗室
 - 授課教師：莊曜禎 助理教授
-- 更新日期：2026-02-19
+- 更新日期：2026-04-27
 
 **課程授權 [CC BY-NC-SA 4.0]**
  - 本教材遵循 [創用CC 姓名標示-非商業性-相同方式分享 4.0 國際 (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) 授權。
