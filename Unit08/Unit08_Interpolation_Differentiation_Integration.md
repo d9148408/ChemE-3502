@@ -173,6 +173,34 @@ z_batch = rgi(pts).reshape(x_pts.shape)
 
 3. **方法選擇** ：對精度要求高的熱力學查表計算，應優先使用 `RectBivariateSpline`；當速度優先且誤差在可接受範圍時，`RegularGridInterpolator` 是更通用的選擇。
 
+![三種二維插值方法的 3D 插值曲面比較](outputs/Unit08_Interpolation_Differentiation_Integration/figs/sec3_2d_interp_3d_surfaces.png)
+
+**🔍 3D 插值曲面說明**
+
+上圖以三個並列的 3D 立體曲面，直接對比三種二維插值方法在 60×60 細密網格上的重建結果：
+
+- **左圖 RegularGridInterpolator（線性，Viridis）** ：插值曲面由分段平面拼接而成，紅色散點（原始 5×5 網格點）均精確落在曲面上；在網格格元中心區域可隱約察覺輕微的「折線感」，反映線性插值忽略局部曲率的特性。
+- **中圖 RectBivariateSpline（雙三次樣條，Plasma）** ：曲面極為平滑，通過所有 25 個紅色已知點，能忠實重現擴散係數隨溫度升高（20→80 °C）單調遞增、隨濃度升高（0.1→0.9 mol/L）單調遞減的非線性趨勢。
+- **右圖 SmoothBivariateSpline（散點雙三次樣條，Cividis）** ：輸入為 25 個位置微擾的散點（橘色），非規則網格排列；曲面同樣平滑，展示散點插值對不規則量測場景的適用性。
+
+![三種二維插值方法的 3D 絕對誤差分布比較](outputs/Unit08_Interpolation_Differentiation_Integration/figs/sec3_2d_interp_3d_errors.png)
+
+**🔍 3D 誤差曲面說明**
+
+上圖展示三種方法與精確解之間的絕對誤差空間分布：
+
+| 方法 | 最大誤差 | RMS 誤差 |
+|------|---------|---------|
+| RegularGridInterpolator（線性）| $\approx 0.121$ | $\approx 0.042$ |
+| RectBivariateSpline（雙三次）| $\approx 0.002$ | $\approx 0.000$ |
+| SmoothBivariateSpline（散點）| $\approx 0.007$ | $\approx 0.002$ |
+
+- **紅色曲面（RGI）** ：可見明顯的 **「帳篷型」** 誤差峰，集中在每個網格格元中心，最大誤差 $\approx 0.121$，正是線性插值截斷曲率所致。
+- **藍色曲面（RBS）** ：幾乎完全貼近底面，最大誤差僅 $\approx 0.002$，與線性插值相差超過 **60 倍**，展示雙三次樣條的卓越精度。
+- **綠色曲面（SBS-sc）** ：因輸入為散點（含位置擾動），誤差略高於 RBS 但仍遠優於線性，最大誤差 $\approx 0.007$，驗證散點雙三次樣條在非規則資料下的穩健性。
+
+> **立體可視化的工程意義** ：3D 誤差圖能一目了然地看出誤差在溫度-濃度空間中的**分佈形態與峰值位置**，幫助工程師判斷哪些操作區域精度較差，並決定是否需要加密量測點或改用高階插值方法。
+
 ### 1.3 外插的風險
 
 插值方法僅保證在資料範圍「內」的準確性。查詢範圍「外」的點稱為**外插 (extrapolation)**，可能導致嚴重誤差：

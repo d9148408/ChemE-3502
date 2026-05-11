@@ -34,8 +34,8 @@
 
 | 問題類型 | 問題形式 | 特徵 | 求解工具 |
 |---------|---------|------|---------|
-| **IVP（起始值問題）** | $\dot{\mathbf{x}} = \mathbf{f}(t, \mathbf{x})$，$\mathbf{x}(t_0) = \mathbf{x}_0$ | 從初始條件向前積分 | `solve_ivp()` |
-| **BVP（邊界值問題）** | $\dot{\mathbf{x}} = \mathbf{F}(t, \mathbf{x})$，$\mathbf{g}(\mathbf{x}(a), \mathbf{x}(b)) = 0$ | 兩端各有約束，需迭代 | `solve_bvp()` |
+| **IVP（起始值問題）** | $\dot{\mathbf{x}} = \mathbf{f}(t, \mathbf{x})$ ， $\mathbf{x}(t_0) = \mathbf{x}_0$ | 從初始條件向前積分 | `solve_ivp()` |
+| **BVP（邊界值問題）** | $\dot{\mathbf{x}} = \mathbf{F}(t, \mathbf{x})$ ， $\mathbf{g}(\mathbf{x}(a), \mathbf{x}(b)) = 0$ | 兩端各有約束，需迭代 | `solve_bvp()` |
 
 #### `solve_ivp()` 求解器比較
 
@@ -50,23 +50,23 @@
 
 #### Stiff ODE 的識別與處理
 - **Stiffness 定義**：系統 Jacobian 矩陣特徵值的實部差距懸殊
-- **Stiffness Ratio**：$SR = \max|\mathrm{Re}(\lambda_i)| / \min|\mathrm{Re}(\lambda_i)|$，$SR > 1000$ 視為 Stiff
+- **Stiffness Ratio**： $SR = \max|\mathrm{Re}(\lambda_i)| / \min|\mathrm{Re}(\lambda_i)|$ ， $SR > 1000$ 視為 Stiff
 - **Non-stiff 求解器失效現象**：步長被迫縮至極小、計算時間劇增甚至解發散
 - **化工 Stiff 問題來源**：快慢反應並存的化學反應動力學（如燃燒、酵素催化、生化反應）
 
 #### `solve_bvp()` 使用要點
-- **邊界條件函數** `bc(ya, yb)`：定義 $\mathbf{g}(\mathbf{x}(a), \mathbf{x}(b)) = 0$，返回殘差向量
+- **邊界條件函數** `bc(ya, yb)`：定義 $\mathbf{g}(\mathbf{x}(a), \mathbf{x}(b)) = 0$ ，返回殘差向量
 - **初始猜測**：提供初始網格 `x` 與猜測解 `y`（常以線性插值建立）
 - **含待定參數的 BVP**：引入參數向量 `p`，讓求解器同步估計未知參數
 - **解的品質評估**：`sol.rms_residuals`（殘差均方根）、`sol.status`（收斂狀態）
 
 #### 微分代數系統（DAE）
-- **DAE 形式**：ODE 與代數約束方程式混合 $\mathbf{M}\dot{\mathbf{y}} = \mathbf{F}(t, \mathbf{y})$，$\mathbf{M}$ 為奇異矩陣
+- **DAE 形式**：ODE 與代數約束方程式混合 $\mathbf{M}\dot{\mathbf{y}} = \mathbf{F}(t, \mathbf{y})$ ， $\mathbf{M}$ 為奇異矩陣
 - **處理策略**：隱式 BDF 搭配 mass 矩陣、代數式視為極快速動力學（奇異攝動法）、強制一致性初始條件
 - **化工 DAE 應用**：相平衡約束 + 動態質量平衡的聯立求解
 
 #### 程式設計最佳實踐
-- **高階 ODE 轉換**：$n$ 階 ODE → $n$ 個聯立一階 ODE（標準向量化寫法）
+- **高階 ODE 轉換**： $n$ 階 ODE → $n$ 個聯立一階 ODE（標準向量化寫法）
 - **外部輸入函數（Forcing Function）**：常數、階梯函數、時變函數的處理（`lambda` 或 `partial`）
 - **精度控制**：一般化工問題 `rtol=1e-6, atol=1e-8`；Stiff 問題可適度放寬
 - **結果驗證**：殘差計算、與解析解對比、物理量守恆檢核（質量守恆、能量守恆）
@@ -92,7 +92,7 @@ $$
 
 **化工重點**：
 - 使用 `solve_ivp(method='RK45')` 求解雙變數動態方程式
-- 不同初始條件（$c_0, \theta_0$）對應不同穩態的動態軌跡
+- 不同初始條件（ $c_0, \theta_0$ ）對應不同穩態的動態軌跡
 - **相圖分析（Phase Portrait）**：繪製 $c$-$\theta$ 相圖，識別三個穩態點的穩定性（穩定焦點/節點 vs 鞍點）
 - **與 Unit07 的聯繫**：驗證動態模擬的最終穩態與 Unit07_Example_04 非線性方程式的靜態解一致
 
@@ -102,7 +102,7 @@ $$
 
 **檔案**：[Unit09_Example_02.md](Unit09_Example_02.md) | [Unit09_Example_02.ipynb](Unit09_Example_02.ipynb)
 
-**問題概述**：丙酮裂解反應（$\mathrm{CH_3COCH_3 \to CH_2CO + CH_4}$）在有外部熱交換的 PFR 中進行，建立轉化率 $X_A$ 與溫度 $T$ 沿反應器長度 $z$ 變化的耦合 ODE 系統，分析操作條件對反應器性能的影響。
+**問題概述**：丙酮裂解反應（ $\mathrm{CH_3COCH_3 \to CH_2CO + CH_4}$ ）在有外部熱交換的 PFR 中進行，建立轉化率 $X_A$ 與溫度 $T$ 沿反應器長度 $z$ 變化的耦合 ODE 系統，分析操作條件對反應器性能的影響。
 
 **數學模型**：雙變數 IVP ODE（以空間 $z$ 為獨立變數）
 
@@ -137,7 +137,7 @@ $$
 $$
 
 **化工重點**：
-- **Stiffness 分析**：計算 Jacobian 矩陣特徵值，評估 Stiffness Ratio（$SR \gg 1000$）
+- **Stiffness 分析**：計算 Jacobian 矩陣特徵值，評估 Stiffness Ratio（ $SR \gg 1000$ ）
 - **方法對比實驗**：`RK45` 失效（步長縮至極小、計算耗時或發散）vs `Radau`/`BDF` 穩定快速求解
 - `rtol`/`atol` 容差設定對計算時間與精度的影響分析
 - 繪製細胞濃度 $X(t)$ 與基質濃度 $S(t)$ 的動態曲線，分析生化反應的延遲期、對數生長期與穩定期
@@ -157,8 +157,8 @@ $$
 X_B'(z) = f_1(X_B, T) \\
 T'(z) = f_2(X_B, T)
 \end{cases}, \quad
-\underbrace{X_B(0) = 0}_{\text{入口}}, \quad
-\underbrace{T'(L) = 0}_{\text{出口絕熱}}
+X_B(0) = 0 \; \text{（入口）}, \quad
+T'(L) = 0 \; \text{（出口絕熱）}
 $$
 
 **化工重點**：
@@ -183,15 +183,15 @@ $$
 $$
 
 $$
-\underbrace{V_x(R) = 0}_{\text{管壁無滑移}}, \quad \underbrace{\frac{dV_x}{dr}\bigg|_{r=0} = 0}_{\text{中心對稱}}
+V_x(R) = 0 \; \text{（管壁無滑移）}, \quad \left.\frac{dV_x}{dr}\right|_{r=0} = 0 \; \text{（中心對稱）}
 $$
 
 **化工重點**：
-- Carreau 黏度模式的非線性特性：低剪率牛頓平台（$\mu_0$）→ 冪次律區（Power-Law）
+- Carreau 黏度模式的非線性特性：低剪率牛頓平台（ $\mu_0$ ）→ 冪次律區（Power-Law）
 - BVP 轉換：高階 ODE 轉為一階 ODE 系統，加入速度 $V_x$ 與其導數 $V_x'$ 為狀態變數
 - 體積流率計算：`scipy.integrate.quad()` 對速度分布積分（與 Unit08 工具的應用）
 - 與牛頓流體（Hagen-Poiseuille 解析解）的速度分布比較
-- 探討流體指數 $n$ 對速度分布形狀的影響（剪切稀化 $n < 1$ vs 剪切增稠 $n > 1$）
+- 探討流體指數 $n$ 對速度分布形狀的影響（剪切稀化 $n < 1$ vs 剪切增稠 $n > 1$ ）
 
 ---
 
@@ -210,7 +210,7 @@ $$
 **化工重點**：
 - 輻射項 $\sigma T^4$ 引入強非線性，使 BVP 可能有多解（初始猜測影響收斂解）
 - 嘗試多組初始猜測值，探討不同收斂結果的物理意義
-- **純熱傳導對比**（$\sigma = 0$，線性解析解 $T = T_L + (T_R - T_L)x$）：輻射對溫度分布的非線性扭曲
+- **純熱傳導對比**（ $\sigma = 0$ ，線性解析解 $T = T_L + (T_R - T_L)x$ ）：輻射對溫度分布的非線性扭曲
 - 分析輻射係數 $\sigma$ 大小對溫度分布曲率的影響（高溫區輻射損失主導）
 - `solve_bvp()` 的收斂診斷與初始猜測的調整策略
 

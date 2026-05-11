@@ -101,8 +101,10 @@ $$
 在反應管入口截面，進料通量等於對流通量加軸向擴散通量之和：
 
 $$
-\underbrace{u C_{A0}}_{\text{進料通量}} = \underbrace{u C_A(0^+)}_{\text{對流}} - \underbrace{D_e \frac{dC_A}{dz}\bigg|_{0^+}}_{\text{軸向擴散}}
+u C_{A0} = u C_A(0^+) - D_e \frac{dC_A}{dz}\bigg|_{0^+}
 $$
+
+（ $u C_{A0}$ 為進料通量； $u C_A(0^+)$ 為對流通量； $D_e \, dC_A/dz\big|_{0^+}$ 為軸向擴散通量）
 
 轉換為無因次轉化率形式：
 
