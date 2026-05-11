@@ -151,7 +151,8 @@ sol = solve_ivp(
 | `sol.success` | bool | 是否求解成功 |
 | `sol.message` | str | 求解狀態說明訊息 |
 | `sol.sol` | callable | 連續插值函式（僅 `dense_output=True` 時存在） |
-| `sol.nfev` | int | ODE 函式呼叫次數 |
+| `sol.nfev` | int | ODE 函式呼叫次數（Number of function evaluations） |
+| `sol.njev` | int | Jacobian 矩陣計算次數（Number of Jacobian evaluations），隱式求解器（Radau、BDF）使用 Newton 迭代時才有非零值 |
 
 **基本使用範例：**
 
@@ -350,7 +351,11 @@ ODE 函數呼叫次數: 418
 
 ### 2.9 範例演練：求解方法效能比較（六種方法）
 
-對相同 non-stiff 一階線性強迫 ODE（ $y' = -2y + \sin t$, $y(0)=1$ ），比較 RK45、RK23、DOP853、Radau、BDF、LSODA 六種方法的精度（最終值）與效能（ nfev ）。
+對相同 non-stiff 一階線性強迫 ODE（ $y' = -2y + \sin t$, $y(0)=1$ ），比較 RK45、RK23、DOP853、Radau、BDF、LSODA 六種方法的精度（最終值）與效能（ `nfev`、`njev` ）。
+
+> **指標說明**
+> - `nfev`（Number of function evaluations）：ODE 右側函式 $f(t, y)$ 的呼叫次數，反映總計算量，值越小代表效率越高。
+> - `njev`（Number of Jacobian evaluations）：Jacobian 矩陣 $\partial f/\partial y$ 的計算次數。**顯式求解器**（RK45、RK23、DOP853）不需要 Jacobian，故 `njev = 0`；**隱式求解器**（Radau、BDF）每步以 Newton 法求解非線性方程組，必須計算 Jacobian，故 `njev ≥ 1`。面對 stiff 問題時，隱式求解器雖 `njev > 0`，仍遠比顯式求解器節省總計算量。
 
 **執行結果：**
 
@@ -572,17 +577,70 @@ for name, sol in [('RK45', sol_rk45), ('Radau', sol_radau),
 
 **提供 Jacobian 矩陣（加速 stiff 求解）：**
 
-解析式 Jacobian 可大幅提升 Radau 和 BDF 的求解速度：
+#### Jacobian 矩陣從何而來？需要自己推導嗎？
+
+**Jacobian 矩陣的定義**：對於 $n$ 維 ODE 系統 $\dot{\mathbf{y}} = \mathbf{f}(t, \mathbf{y})$，Jacobian 矩陣為：
+
+$$
+J_{ij} = \frac{\partial f_i}{\partial y_j}, \quad i,j = 1, \ldots, n
+$$
+
+即每個方程式對每個狀態變數的偏微分所組成的 $n \times n$ 矩陣。
+
+**有三種取得方式，不一定需要手動推導：**
+
+| 方式 | 方法 | 優點 | 缺點 |
+|------|------|------|------|
+| **不提供（預設）** | SciPy 內部自動以數值差分近似 | 零門檻，直接使用 | 每次需多次呼叫 $f$，計算量略增 |
+| **數值差分（手動）** | 以有限差分公式自行計算 | 可複用、可除錯 | 需注意 $\epsilon$ 選取，精度有限 |
+| **解析式（手推）** | 對 $\mathbf{f}$ 手動或用 SymPy 求偏微分 | 最精確、速度最快 | 需推導，方程複雜時費時 |
+
+**結論：一般情況下可不提供 `jac`**，SciPy 會自動數值估算。只有在方程維度高、計算瓶頸明顯時，才值得投入時間推導解析式 Jacobian。
+
+---
+
+**方式一：不提供（SciPy 自動數值差分）**
+
+```python
+# 最簡單的用法，jac 省略即可
+sol = solve_ivp(fun, t_span, y0, method='Radau', rtol=1e-6, atol=1e-9)
+```
+
+**方式二：提供數值差分 Jacobian（手動封裝）**
+
+```python
+def numerical_jacobian(t, y, fun, eps=1e-7):
+    """以前向差分數值計算 Jacobian"""
+    n = len(y)
+    f0 = np.array(fun(t, y))
+    J = np.zeros((n, n))
+    for j in range(n):
+        y_pert = y.copy()
+        y_pert[j] += eps
+        J[:, j] = (np.array(fun(t, y_pert)) - f0) / eps
+    return J
+
+sol = solve_ivp(fun, t_span, y0, method='Radau',
+                jac=lambda t, y: numerical_jacobian(t, y, fun))
+```
+
+**方式三：解析式 Jacobian（以 Robertson 問題為例）**
+
+以 Robertson 問題為例，手推（或用 SymPy 符號微分）：
+
+$$
+\mathbf{f} = \begin{bmatrix} -0.04\,y_1 + 10^4\,y_2 y_3 \\ 0.04\,y_1 - 10^4\,y_2 y_3 - 3\times10^7\,y_2^2 \\ 3\times10^7\,y_2^2 \end{bmatrix}
+\implies
+J = \begin{bmatrix} -0.04 & 10^4 y_3 & 10^4 y_2 \\ 0.04 & -10^4 y_3 - 6\times10^7 y_2 & -10^4 y_2 \\ 0 & 6\times10^7 y_2 & 0 \end{bmatrix}
+$$
 
 ```python
 def ode_jacobian(t, y):
-    """解析式 Jacobian（選填，提供可加速求解）"""
-    J = np.zeros((2, 2))
-    J[0, 0] = -0.04
-    J[0, 1] = 1e4 * y[2]
-    J[1, 0] = 0.04
-    J[1, 1] = -1e4 * y[2] - 6e7 * y[1]
-    # ...
+    """Robertson 問題解析式 Jacobian"""
+    J = np.zeros((3, 3))
+    J[0, 0] = -0.04;    J[0, 1] = 1e4 * y[2];                   J[0, 2] = 1e4 * y[1]
+    J[1, 0] =  0.04;    J[1, 1] = -1e4 * y[2] - 6e7 * y[1];     J[1, 2] = -1e4 * y[1]
+    J[2, 0] =  0.0;     J[2, 1] = 6e7 * y[1];                    J[2, 2] = 0.0
     return J
 
 sol = solve_ivp(fun, t_span, y0, method='Radau',
