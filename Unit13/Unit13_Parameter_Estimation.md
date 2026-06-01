@@ -40,6 +40,9 @@
    - 4.2 由協方差矩陣推算置信區間
    - 4.3 置信區間寬窄之物理意義
 5. [Python 相關函式總覽](#5-python-相關函式總覽)
+   - 5.1 三大工具比較表
+   - 5.2 方法選擇決策流程
+   - 5.3 函式調用摘要
 
 ---
 
@@ -120,10 +123,10 @@ $$
 y^M = \theta_1 \phi_1(x) + \theta_2 \phi_2(x) + \cdots + \theta_p \phi_p(x)
 $$
 
-將所有數據點排成矩陣，建立**設計矩陣（Design Matrix）** $\mathbf{X}$ ：
+將所有數據點排成矩陣，以 $\mathbf{Y}^M$ 代表模式預測輸出向量、 $\mathbf{X}$ 代表**設計矩陣（Design Matrix）**、 $\boldsymbol{\theta}$ 代表參數向量，建立如下矩陣方程式：
 
 $$
-\underbrace{\begin{bmatrix} y_1^M \\ y_2^M \\ \vdots \\ y_n^M \end{bmatrix}}_{\mathbf{Y}^M} = \underbrace{\begin{bmatrix} \phi_1(x_1) & \phi_2(x_1) & \cdots & \phi_p(x_1) \\ \phi_1(x_2) & \phi_2(x_2) & \cdots & \phi_p(x_2) \\ \vdots & \vdots & \ddots & \vdots \\ \phi_1(x_n) & \phi_2(x_n) & \cdots & \phi_p(x_n) \end{bmatrix}}_{\mathbf{X}} \underbrace{\begin{bmatrix} \theta_1 \\ \theta_2 \\ \vdots \\ \theta_p \end{bmatrix}}_{\boldsymbol{\theta}}
+\begin{bmatrix} y_1^M \\ y_2^M \\ \vdots \\ y_n^M \end{bmatrix} = \begin{bmatrix} \phi_1(x_1) & \phi_2(x_1) & \cdots & \phi_p(x_1) \\ \phi_1(x_2) & \phi_2(x_2) & \cdots & \phi_p(x_2) \\ \vdots & \vdots & \ddots & \vdots \\ \phi_1(x_n) & \phi_2(x_n) & \cdots & \phi_p(x_n) \end{bmatrix} \begin{bmatrix} \theta_1 \\ \theta_2 \\ \vdots \\ \theta_p \end{bmatrix}
 $$
 
 即 $\mathbf{Y}^M = \mathbf{X}\boldsymbol{\theta}$ ，目標函數可表示成
@@ -330,7 +333,7 @@ def model(x, p1, p2, p3):
 **數值結果**：
 
 ```
-非線性模式 y = α·x² + β·sin(x) + γ·x³
+非線性模式 y = α*x² + β*sin(x) + γ*x³
 
 參數估計值:
   α (alpha) = 0.2269
@@ -447,11 +450,7 @@ $$
 `scipy.optimize.curve_fit()` 返回的 `pcov` 為**參數估計值之協方差矩陣**：
 
 $$
-\mathbf{P}_{\text{cov}} = \begin{bmatrix}
-\sigma_{p_1}^2 & \sigma_{p_1 p_2} & \cdots \\
-\sigma_{p_2 p_1} & \sigma_{p_2}^2 & \cdots \\
-\vdots & \vdots & \ddots
-\end{bmatrix}
+\mathbf{P}_{\text{cov}} = \begin{bmatrix} \sigma_{p_1}^2 & \sigma_{p_1 p_2} & \cdots \\ \sigma_{p_2 p_1} & \sigma_{p_2}^2 & \cdots \\ \vdots & \vdots & \ddots \end{bmatrix}
 $$
 
 對角線元素即為各參數估計值之**方差（Variance）**，開方後得到**標準差（Standard Deviation）**：
@@ -475,7 +474,7 @@ for i, (p, err) in enumerate(zip(popt, ci_95)):
 **數值結果**：
 
 ```
-非線性模式 y = α·x² + β·sin(x) + γ·x³  之 95% 置信區間
+非線性模式 y = α*x² + β*sin(x) + γ*x³  之 95% 置信區間
 ------------------------------------------------------------
 參數           估計值       標準差     95% CI 下限   95% CI 上限
 ------------------------------------------------------------
@@ -496,7 +495,7 @@ for i, (p, err) in enumerate(zip(popt, ci_95)):
 **數值結果**：
 
 ```
-吸附等溫模式 Q = b·C / (1 + a·C^β)  之 95% 置信區間
+吸附等溫模式 Q = b*C / (1 + a*C^β)  之 95% 置信區間
 ------------------------------------------------------------
 參數           估計值       標準差     95% CI 下限   95% CI 上限
 ------------------------------------------------------------
@@ -547,7 +546,7 @@ beta (β)       0.7904       0.0054       0.7798       0.8011
 | 函式 | 適用情境 | 優點 | 限制 |
 |------|---------|------|------|
 | `scipy.linalg.lstsq(X, Y)` | 線性參數模式 | 解析解，快速穩定，有秩診斷 | 僅限線性模式 |
-| `scipy.optimize.curve_fit(f, x, y)` | 非線性模式，需置信區間 | 自動返回協方差矩陣 `pcov` | 無法直接設定嚴格上下限 |
+| `scipy.optimize.curve_fit(f, x, y)` | 非線性模式，需置信區間 | 自動返回協方差矩陣 `pcov`；支援 `bounds` 參數 | 設有 `bounds` 時無法使用 Levenberg-Marquardt 演算法，調優彈性低於 `least_squares()` |
 | `scipy.optimize.least_squares(res, p0, bounds=)` | 非線性模式，需上下限約束 | 嚴格支援上下限，多種求解演算法 | 不直接返回協方差矩陣，需後續處理 |
 
 ### 5.2 方法選擇決策流程
