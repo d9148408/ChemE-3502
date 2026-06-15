@@ -16,7 +16,14 @@
 !Unit12
 !Unit13
 !Unit14
+!Unit15
 
+# Ignore large model files
+Unit15/outputs/P4_Unit15_Example_Mining/models/example_rf_model.joblib
+
+# Ignore heavy data and outputs in Unit15 (keep files locally)
+Unit15/data/
+Unit15/outputs/
 
 # Also track .gitignore itself
 !.gitignore
